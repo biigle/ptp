@@ -1,8 +1,8 @@
 <?php
 
-namespace Biigle\Tests\Modules\Module;
+namespace Biigle\Tests\Modules\Ptp;
 
-use Biigle\Modules\Module\ModuleServiceProvider;
+use Biigle\Modules\Ptp\ModuleServiceProvider;
 use TestCase;
 
 class ModuleServiceProviderTest extends TestCase
