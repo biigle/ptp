@@ -94,6 +94,33 @@ class PtpJob extends Job implements ShouldQueue
     public array $annotations ;
 
     /**
+     * Whether to dismiss labels even if they were created by other users.
+     *
+     * @var ImageAnnotation[]
+     */
+    public array $points ;
+
+    /**
+     * Whether to dismiss labels even if they were created by other users.
+     *
+     * @var ImageAnnotation[]
+     */
+    public array $labels ;
+    /**
+     * Whether to dismiss labels even if they were created by other users.
+     *
+     * @var ImageAnnotation[]
+     */
+    public array $expectedAreas ;
+
+    /**
+     * Whether to dismiss labels even if they were created by other users.
+     *
+     * @var ImageAnnotation[]
+     */
+    public array $annotationIds;
+
+    /**
      * Create a new job instance.
      *
      * @param \Biigle\User $user
@@ -106,8 +133,18 @@ class PtpJob extends Job implements ShouldQueue
         $this->queue = config('ptp.job_queue');
         $this->user = $user;
         //Assumes that annotations are grouped by images
-        $this->image = $annotations[0]->image;
-        $this->annotations = $annotations;
+        $this->image = $annotations[0]['image'];
+        // We expect these annotations to be point annotations
+        $this->points = [];
+        $this->labels= [];
+        $this->expectedAreas = [];
+        $this->annotationIds = [];
+        foreach ($annotations as $annotation) {
+            $this->points[] = implode(',', $annotation['points']);
+            $this->labels[] = $annotation['label'];
+            $this->expectedAreas[] = $annotation['expected_area'];
+            $this->annotationIds[] = $annotation['annotation_id'];
+        }
     }
 
     /**
@@ -140,6 +177,16 @@ class PtpJob extends Job implements ShouldQueue
         $python = config('ptp.python');
         $script = config('ptp.ptp_script');
         $logFile = __DIR__."/{$log}";
+        $points = implode(' ',$this->points);
+        $labels = implode(' ', $this->labels);
+        $expectedAreas = implode(' ', $this->expectedAreas);
+        $device = config('ptp.device');
+        $modelPath = config('ptp.model_path');
+        $modelType = config('ptp.model_type');
+        $imageId = $this->image->id;
+        $annotationIds = implode(' ', $this->annotationIds);
+
+        dd("{$python} -u {$script} -i {$imagePath} --image-id {$imageId} -p {$points} -l {$labels} -e {$expectedAreas} -a {$annotationIds} --device {$device} --model-type {$modelType} --model-path {$modelPath} >{$logFile} 2>&1");
         exec("{$python} -u {$script} {$imagePath} >{$logFile} 2>&1", $lines, $code);
 
         if ($code !== 0) {

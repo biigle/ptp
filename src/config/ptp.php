@@ -29,18 +29,35 @@ return [
     /*
     | Path to the script that performs PTP conversion.
     */
-    'ptp_script' => __DIR__.'/../resources/scripts/PTP.py',
+    'ptp_script' => __DIR__.'/../resources/scripts/ptp.py',
 
     /*
-    | URL from which to download the trained weights for the model.
+    | The device to compute the SAM embedding on.
+    |
+    | Devices: cpu, cuda
     */
-    'model_url' => env('PTP_MODEL_URL', 'https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'),
+    'device' => env('PTP_DEVICE', 'cpu'),
+
+/*
+    | Path to store the model checkpoint to.
+    */
+    'model_path' => storage_path('ptp').'/sam_checkpoint.pth',
 
     /*
-    | Path to the file to store the pretrained model weights to.
+    | URL from which to download the model checkpoint.
+    |
+    | Important: The model checkpoint mst match with the ONNX file (see below)!
+    |
+    | See: https://github.com/facebookresearch/segment-anything#model-checkpoints
     */
-    'model_path' => storage_path('ptp_jobs').'/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth',
+    'model_url' => env('PTP_MODEL_URL', 'https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth'),
 
+    /*
+    | The SAM model type.
+    |
+    | See: https://github.com/facebookresearch/segment-anything#model-checkpoints
+    */
+    'model_type' => env('PTP_MODEL_TYPE', 'vit_h'),
 
     'notifications' => [
         /*
