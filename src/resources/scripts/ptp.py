@@ -1,30 +1,14 @@
-from typing import Union
-from PIL import Image, ImageFile
-from collections import namedtuple
-import logging
-import random
-import json
-import numpy as np
-import pandas as pd
-import cv2
-from segment_anything import SamPredictor, sam_model_registry
-import torch
-import math
 import argparse
-from pathlib import Path
-import re
-import asyncio
-import getpass
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-from sahi import AutoDetectionModel
-from sahi.predict import get_sliced_prediction
-from scipy.spatial.distance import cdist
 import json
-from pycocotools import mask
-import copy
-import requests
-import os
+import math
+import random
+from collections import namedtuple
+from typing import Union
+
+import cv2
+import numpy as np
+from PIL import Image
+from segment_anything import SamPredictor, sam_model_registry
 
 try:
     from dotenv import load_dotenv
