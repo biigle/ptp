@@ -10,6 +10,8 @@ use File;
 use FileCache;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Support\Facades\Storage;
+
 
 class PtpJob extends Job implements ShouldQueue
 {
@@ -121,6 +123,12 @@ class PtpJob extends Job implements ShouldQueue
     public array $annotationIds;
 
     /**
+     * Whether to dismiss labels even if they were created by other users.
+     *
+     * @var string
+     */
+    public string $targetDisk;
+    /**
      * Create a new job instance.
      *
      * @param \Biigle\User $user
@@ -131,6 +139,7 @@ class PtpJob extends Job implements ShouldQueue
     public function __construct(User $user, array $annotations)
     {
         $this->queue = config('ptp.job_queue');
+        $this->targetDisk = config('ptp.ptp_storage_disk');
         $this->user = $user;
         //Assumes that annotations are grouped by images
         $this->image = $annotations[0]['image'];
@@ -154,19 +163,16 @@ class PtpJob extends Job implements ShouldQueue
      */
     public function handle()
     {
-        $imagePath = '';
         try {
-            FileCache::getOnce($this->image, function ($image, $path) use (&$imagePath) {
-                $imagePath = $path;
+            FileCache::getOnce($this->image, function ($image, $path){
+                $this->python($path);
             });
         } catch (Exception $e) {
             return $e->getMessage();
         };
         //unsure about this? I deleted the image files by mistake once and I saw that in other places it
         // is added
-        $this->image->save();
 
-        $this->python($imagePath);
     }
 
     //TODO: add docstring
@@ -185,9 +191,7 @@ class PtpJob extends Job implements ShouldQueue
         $modelType = config('ptp.model_type');
         $imageId = $this->image->id;
         $annotationIds = implode(' ', $this->annotationIds);
-
-        dd("{$python} -u {$script} -i {$imagePath} --image-id {$imageId} -p {$points} -l {$labels} -e {$expectedAreas} -a {$annotationIds} --device {$device} --model-type {$modelType} --model-path {$modelPath} >{$logFile} 2>&1");
-        exec("{$python} -u {$script} {$imagePath} >{$logFile} 2>&1", $lines, $code);
+        exec("{$python} -u {$script} -i {$imagePath} --image-id {$imageId} -p {$points} -l {$labels} -e {$expectedAreas} -a {$annotationIds} --device {$device} --model-type {$modelType} --model-path {$modelPath} > {$logFile} 2>&1", $lines, $code);
 
         if ($code !== 0) {
             $lines = File::get($logFile);

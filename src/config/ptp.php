@@ -32,6 +32,11 @@ return [
     'ptp_script' => __DIR__.'/../resources/scripts/ptp.py',
 
     /*
+    | Path to the script that performs PTP conversion.
+    */
+    'ptp_storage_disk' => env('PTP_STORAGE_DISK', 'ptp'),
+
+    /*
     | The device to compute the SAM embedding on.
     |
     | Devices: cpu, cuda

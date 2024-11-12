@@ -6,6 +6,7 @@ use Biigle\Modules\Ptp\Jobs\PtpJob;
 use Biigle\Image;
 use Biigle\ImageAnnotation;
 use Biigle\ImageAnnotationLabel;
+use Exception;
 use Illuminate\Http\Request;
 use File;
 use FileCache;
@@ -23,8 +24,8 @@ class PtpController extends Controller
         $annotations = $request->annotations;
 
         // group per file
-        foreach ($annotations as $annotation => $value) {
-            $annotation = ImageAnnotation::findOrFail($annotation);
+        foreach ($annotations as $annotationId) {
+            $annotation = ImageAnnotation::findOrFail($annotationId);
             if (!isset($imageAnnotationArray[$annotation->image->id])) {
                 $imageAnnotationArray[$annotation->image->id] = [];
             }
@@ -34,7 +35,7 @@ class PtpController extends Controller
                 'points' => $annotation->points,
                 'shape' => $annotation->shape_id,
                 'image' => $annotation->image,
-                'expected_area' => intval($value),
+                'expected_area' => intval($annotationId),
                 'label' => ImageAnnotationLabel::findOrFail($annotation->id)->id,
 
             ];
@@ -44,7 +45,7 @@ class PtpController extends Controller
         //
         foreach ($imageAnnotationArray as $imageId => $imageAnnotationValues){
             $job = new PtpJob($request->user(), $imageAnnotationValues);
-            $job->handle($request->user(), $imageAnnotationArray);
+            $job->dispatch($request->user(), $imageAnnotationValues);
         }
 
         return ['submitted' => true];
