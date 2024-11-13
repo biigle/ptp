@@ -9,7 +9,7 @@ $router->group([
 });
 $router->group([
     'middleware' => 'auth',
-    'namespace' => 'Api',
+    'namespace' => 'Views',
 ], function ($router) {
     $router->get('ptp/{id}', ['as' => 'volumes-ptp-conversion', 'uses' => 'PtpController@index']);
 });
