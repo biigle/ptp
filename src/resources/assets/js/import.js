@@ -1,5 +1,5 @@
 // export let AnnotationCanvas = biigle.$require('annotations.components.annotationCanvas');
-// export let AnnotationPatch = biigle.$require('largo.mixins.annotationPatch');
+//export let AnnotationPatch = biigle.$require('largo.mixins.annotationPatch');
 // export let AttachLabelInteraction = biigle.$require('annotations.ol.AttachLabelInteraction');
 // export let handleErrorResponse = biigle.$require('messages').handleErrorResponse;
 // export let ImageGrid = biigle.$require('volumes.components.imageGrid');

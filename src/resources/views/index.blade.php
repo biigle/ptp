@@ -2,11 +2,10 @@
 @section('title', "{$volume->name} Point to Polygon Conversion")
 
 @section('content')
-<div class="container">
     <div class="col-sm-8 col-sm-offset-2 col-lg-6 col-lg-offset-3">
-    Heyyy
+
+    @include('ptp::show.ptp')
     </div>
-</div>
 @endsection
 
 @section('navbar')
@@ -15,4 +14,12 @@
 </div>
 @endsection
 
+@push('scripts')
+    <script src="{{ cachebust_asset('vendor/ptp/scripts/main.js') }}"></script>
+    <script type="text/javascript">
+        biigle.$declare('ptp.labels', {!! $labels !!});
+        biigle.$declare('ptp.annotations', {!! $annotations !!});
 
+
+    </script>
+@endpush
