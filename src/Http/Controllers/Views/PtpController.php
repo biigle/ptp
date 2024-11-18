@@ -64,10 +64,11 @@ class PtpController extends Controller
         //annotation with labels and that are points
         $annotations = ImageAnnotation::join('image_annotation_labels','image_annotations.id', '=', 'image_annotation_labels.annotation_id')
             ->join('images','image_annotations.image_id','=','images.id')
+            ->join('labels', 'image_annotation_labels.label_id','=','labels.id')
             ->where('images.volume_id', $volume->id)
             ->whereIn('image_annotation_labels.label_id', $labels)
             ->where('image_annotations.shape_id', $pointAnnotationId)
-            ->select('images.uuid', 'image_annotations.id', 'image_annotation_labels.label_id')->get();
+            ->select('images.uuid', 'image_annotations.id', 'image_annotation_labels.label_id', 'labels.name AS label_name')->get();
 
         return view('ptp::index', compact('volume'), ['annotations' => $annotations, 'labels'=>$labels]);
 

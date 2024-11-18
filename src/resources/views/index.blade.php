@@ -19,7 +19,11 @@
     <script type="text/javascript">
         biigle.$declare('ptp.labels', {!! $labels !!});
         biigle.$declare('ptp.annotations', {!! $annotations !!});
-
-
+        biigle.$declare('ptp.thumbnailWidth', {{ config('thumbnails.width') }});
+        biigle.$declare('ptp.thumbnailHeight', {{ config('thumbnails.height') }});
+        biigle.$declare('ptp.thumbnailEmptyUrl', '{{ asset(config('thumbnails.empty_url')) }}');
+        biigle.$declare('ptp.showImageAnnotationRoute', '{{ route('show-image-annotation', '') }}/');
+        biigle.$declare('ptp.showVideoAnnotationRoute', '{{ route('show-video-annotation', '') }}/');
+        biigle.$declare('ptp.thumbnailUrl', '{{ $volume->thumbnail_url }}');
     </script>
 @endpush

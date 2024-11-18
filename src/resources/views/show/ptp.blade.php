@@ -1,1 +1,2 @@
-<div id="ptp-container"></div>
+<div id="ptp-container">
+</div>
