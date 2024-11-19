@@ -24,6 +24,13 @@
         biigle.$declare('ptp.thumbnailEmptyUrl', '{{ asset(config('thumbnails.empty_url')) }}');
         biigle.$declare('ptp.showImageAnnotationRoute', '{{ route('show-image-annotation', '') }}/');
         biigle.$declare('ptp.showVideoAnnotationRoute', '{{ route('show-video-annotation', '') }}/');
-        biigle.$declare('ptp.thumbnailUrl', '{{ $volume->thumbnail_url }}');
+        biigle.$declare('ptp.templateUrl', '{{ $largoPatchesUrl }}');
     </script>
 @endpush
+
+@push("styles")
+<link href="{{ cachebust_asset('vendor/ptp/styles/main.css') }}" rel="stylesheet">
+<link href="{{ cachebust_asset('vendor/largo/styles/main.css') }}" rel="stylesheet">
+
+@endpush
+

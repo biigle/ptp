@@ -2,6 +2,7 @@
 export let AnnotationPatch = biigle.$require('largo.mixins.annotationPatch');
 // export let AttachLabelInteraction = biigle.$require('annotations.ol.AttachLabelInteraction');
 // export let handleErrorResponse = biigle.$require('messages').handleErrorResponse;
+export let Events = biigle.$require('events')
 export let ImageGrid = biigle.$require('volumes.components.imageGrid');
 export let ImageGridImage = biigle.$require('volumes.components.imageGridImage');
 // export let ImagesStore = biigle.$require('annotations.stores.images');

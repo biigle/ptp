@@ -70,7 +70,10 @@ class PtpController extends Controller
             ->where('image_annotations.shape_id', $pointAnnotationId)
             ->select('images.uuid', 'image_annotations.id', 'image_annotation_labels.label_id', 'labels.name AS label_name')->get();
 
-        return view('ptp::index', compact('volume'), ['annotations' => $annotations, 'labels'=>$labels]);
+        //largo URL patches to show
+        $largoPatchesUrl = Storage::disk(config('largo.patch_storage_disk'))->url(':prefix/:id.'.config('largo.patch_format'));
+
+        return view('ptp::index', compact('volume'), ['annotations' => $annotations, 'labels'=>$labels, 'largoPatchesUrl' => $largoPatchesUrl]);
 
     }
 

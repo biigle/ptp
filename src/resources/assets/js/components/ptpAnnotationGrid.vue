@@ -1,5 +1,5 @@
 <script>
-import {ImageGrid} from '../import';
+import {ImageGrid, Events} from '../import';
 import Image from './ptpImage';
 
 /**
@@ -12,6 +12,20 @@ export default {
     components: {
         imageGridImage: Image,
     },
+    computed: {
+        rows() {
+            //Force only one row to be displayed
+            return 1
+        },
+        columns() {
+            //Force only one column to be displayed
+            return 1
+        }
+
+    },
+
+    created() {
+   },
 };
 </script>
 
