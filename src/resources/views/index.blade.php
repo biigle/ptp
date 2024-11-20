@@ -25,6 +25,7 @@
         biigle.$declare('ptp.showImageAnnotationRoute', '{{ route('show-image-annotation', '') }}/');
         biigle.$declare('ptp.showVideoAnnotationRoute', '{{ route('show-video-annotation', '') }}/');
         biigle.$declare('ptp.templateUrl', '{{ $largoPatchesUrl }}');
+        biigle.$declare('ptp.volumeId', {{ $volume->id }});
     </script>
 @endpush
 

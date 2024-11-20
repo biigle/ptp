@@ -5,8 +5,8 @@
             <ptp-annotation-grid class="col-xs-6 ptp-cols":images="groupedAnnotations" ref="dismissGrid" empty-url="emptyUrl" :width="thumbnailWidth" :height="thumbnailHeight">
 </ptp-annotation-grid>
 <div class="col-xs-6 ptp-cols"><span>Here will be the graph</span></div>
-<div class="col-xs-3 ptp-button-cols"><a class="button" target="_blank" title="Compute Polygon Area using Magic Sam" @click="sendComputeAreaRequest(groupedAnnotations)"><i class="fa fa-draw-polygon " aria-hidden="true"></i></a></div>
-<div class="col-xs-3 ptp-button-cols"><a class="button" target="_blank" title="Run Point to Polygon Conversion"><i class="fa fa-draw-polygon " aria-hidden="true" @click="sendPtpRequest(groupedAnnotations)"></i></a></div>
+<div class="col-xs-3 ptp-button-cols"><a class="big-button" target="_blank" title="Compute Expected Polygon Area using the SAM Model" @click="sendComputeAreaRequest(groupedAnnotations)"><i class="fa fa-chart-area"></i></a></div>
+<div class="col-xs-3 ptp-button-cols"><a class="big-button" target="_blank" title="Run Point to Polygon Conversion"><i class="fa fa-draw-polygon " aria-hidden="true" @click="sendPtpRequest(groupedAnnotations)"></i></a></div>
 
 
             </div>
@@ -16,24 +16,13 @@
 <script>
 import {AnnotationPatch, Events} from './import';
 import PtpAnnotationGrid from './components/ptpAnnotationGrid'
+import PtpJobApi from './api/ptpJob'
 
 
 export default {
     mixins: [AnnotationPatch],
     components: {
       ptpAnnotationGrid: PtpAnnotationGrid,
-    },
-    props: {
-    },
-    computed: {
-        rows() {
-            // Force only one image to be displayed
-            return 1
-        },
-        columns() {
-            //Force only one image to be displayed
-            return 1
-        },
     },
     data(){
         let annotationsPerLabel = {};
@@ -55,6 +44,7 @@ export default {
             emptyUrl: biigle.$require('ptp.thumbnailEmptyUrl'),
             thumbnailWidth: biigle.$require('ptp.thumbnailWidth'),
             thumbnailHeight: biigle.$require('ptp.thumbnailHeight'),
+            volumeId: biigle.$require('ptp.volumeId'),
         }
     },
     provide() {
@@ -68,14 +58,17 @@ export default {
 
         return { 'outlines': appData };
     },
-    created() {
-    },
     methods: {
-        sendComputeAreaRequest(label){
+        sendComputeAreaRequest(annotations){
             console.log("Sending compute area request!");
+            console.log("Label: " + annotations[0].label_id);
+            PtpJobApi.sendPtpJob({job_type: 'compute-area', label_id: annotations[0].label_id, volume_id: this.volumeId});
+
         },
         sendPtpRequest(label){
             console.log("Sending PTP request");
+            console.log("Label: " + annotations[0].label_id);
+            PtpJobApi.sendPtpJob({job_type: 'ptp', label_id: annotations[0].label_id, volume_id: this.volumeId});
         }
     }
 }

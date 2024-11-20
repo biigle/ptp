@@ -1,7 +1,7 @@
 <?php
 namespace Biigle\Modules\Ptp\Jobs;
 use Biigle\Modules\Maia\GenericImage;
-use Biigle\Jobs\Job;
+use Biigle\Jobs\Job as BaseJob;
 use Biigle\User;
 use Biigle\Image;
 use Biigle\ImageAnnotations;
@@ -11,10 +11,13 @@ use FileCache;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Bus\Batchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
 
-
-class PtpJob extends Job implements ShouldQueue
+class PtpJob extends BaseJob implements ShouldQueue
 {
+    use Batchable, InteractsWithQueue, Queueable, SerializesModels;
     /**
      * The queue to push this job to.
      *
@@ -78,14 +81,21 @@ class PtpJob extends Job implements ShouldQueue
      */
     public $force;
 
-    //TODO: Fix comments below
+    //TODO: Fix comments below and remove the useless ones above
 
     /**
      * Whether to dismiss labels even if they were created by other users.
      *
      * @var Image
      */
-    public Image $image ;
+    public int $imageId ;
+
+    /**
+     * Whether to dismiss labels even if they were created by other users.
+     *
+     * @var string
+     */
+    public string $jobType;
 
 
     /**
@@ -107,13 +117,13 @@ class PtpJob extends Job implements ShouldQueue
      *
      * @var ImageAnnotation[]
      */
-    public array $labels ;
+    public int $labelId ;
     /**
      * Whether to dismiss labels even if they were created by other users.
      *
      * @var ImageAnnotation[]
      */
-    public array $expectedAreas ;
+    public array $expectedArea ;
 
     /**
      * Whether to dismiss labels even if they were created by other users.
@@ -136,24 +146,26 @@ class PtpJob extends Job implements ShouldQueue
      *
      * @return void
      */
-    public function __construct(User $user, array $annotations)
+    public function __construct(User $user, array $annotations, string $jobType, int $labelId)
     {
         $this->queue = config('ptp.job_queue');
         $this->targetDisk = config('ptp.ptp_storage_disk');
         $this->user = $user;
         //Assumes that annotations are grouped by images
-        $this->image = $annotations[0]['image'];
+        $this->imageId = $annotations[0]['image'];
         // We expect these annotations to be point annotations
         $this->points = [];
-        $this->labels= [];
-        $this->expectedAreas = [];
+        $this->labelId= $labelId;
+        $this->expectedArea = [];
         $this->annotationIds = [];
+        $this->jobType = $jobType;
         foreach ($annotations as $annotation) {
             $this->points[] = implode(',', $annotation['points']);
-            $this->labels[] = $annotation['label'];
-            $this->expectedAreas[] = $annotation['expected_area'];
+            //TODO: find a better way to pass this arg.
+            $this->expectedArea[] = $annotation['expected_area'];
             $this->annotationIds[] = $annotation['annotation_id'];
         }
+
     }
 
     /**
@@ -164,7 +176,8 @@ class PtpJob extends Job implements ShouldQueue
     public function handle()
     {
         try {
-            FileCache::getOnce($this->image, function ($image, $path){
+            $image = Image::findOrFail($this->imageId);
+            FileCache::getOnce($image, function ($image, $path){
                 $this->python($path);
             });
         } catch (Exception $e) {
@@ -182,21 +195,28 @@ class PtpJob extends Job implements ShouldQueue
         $lines = [];
         $python = config('ptp.python');
         $script = config('ptp.ptp_script');
-        $logFile = __DIR__."/{$log}";
+        $logFile = __DIR__.'/'.$log;
         $points = implode(' ',$this->points);
-        $labels = implode(' ', $this->labels);
-        $expectedAreas = implode(' ', $this->expectedAreas);
+        $labelId = $this->labelId;
+        $expectedArea = $this->expectedArea;
         $device = config('ptp.device');
         $modelPath = config('ptp.model_path');
         $modelType = config('ptp.model_type');
-        $imageId = $this->image->id;
+        $imageId = $this->imageId;
         $annotationIds = implode(' ', $this->annotationIds);
-        exec("{$python} -u {$script} -i {$imagePath} --image-id {$imageId} -p {$points} -l {$labels} -e {$expectedAreas} -a {$annotationIds} --device {$device} --model-type {$modelType} --model-path {$modelPath} > {$logFile} 2>&1", $lines, $code);
+        $jobType = $this->jobType;
+        $outputDir = config('ptp.temp_dir').'/'.$labelId;
+        $command = "{$python} -u {$script} {$jobType} -i {$imagePath} --image-id {$imageId} -p {$points} -l {$labelId}  -a {$annotationIds} --device {$device} --model-type {$modelType} --model-path {$modelPath} --output-dir {$outputDir} ";
+        if ($jobType == 'ptp') {
+            $command = $command." -e $expectedArea";
+        }
+        exec("$command > {$logFile} 2>&1", $lines, $code);
 
         if ($code !== 0) {
             $lines = File::get($logFile);
             throw new Exception("Error while executing python script'{$script}':\n{$lines}", $code);
         }
+
     }
 
 }

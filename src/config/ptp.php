@@ -37,6 +37,11 @@ return [
     'ptp_storage_disk' => env('PTP_STORAGE_DISK', 'ptp'),
 
     /*
+    | Path for temporary files
+    */
+    'temp_dir' => sys_get_temp_dir(),
+    // TODO: set to sys_get_temp_dir() after testing
+    /*
     | The device to compute the SAM embedding on.
     |
     | Devices: cpu, cuda

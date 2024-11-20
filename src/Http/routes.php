@@ -5,7 +5,7 @@ $router->group([
     'namespace' => 'Api',
     'prefix' => 'api/v1'
 ], function ($router) {
-    $router->get('ptp-test', 'PtpController@generatePtpJob');
+    $router->post('send-ptp-job', 'PtpController@generatePtpJob');
 });
 $router->group([
     'middleware' => 'auth',

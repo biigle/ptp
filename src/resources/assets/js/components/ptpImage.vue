@@ -59,7 +59,6 @@ export default {
     methods: {
 
         handleOverlayLoad() {
-            console.log("hey");
             this.overlayIsLoaded = true;
         },
         handleOverlayError() {

@@ -1,6 +1,7 @@
 import argparse
 import json
 import math
+import os
 import random
 from collections import namedtuple
 from typing import Union
@@ -326,7 +327,7 @@ def zoom_sam(
 
 
 # check if an annotation is oob
-def annotation_is_inside_contour(
+def annotation_is_out_of_bounds(
     ann_point: np.array, img_width: int, img_height: int
 ) -> bool:
     """
@@ -372,6 +373,9 @@ def annotation_is_compatible(
     Returns:
         Returns True if contour is not None, if the ratio between contour area and threshold is within the threshold and if the contour area is not too small or big in reference with the expecectation. Returns False otherwise
     """
+    if expected_annotation_area is None:
+        # Case for area estimation. We do not filter the new annotations
+        expected_annotation_area = contour_area
     return (
         contour is not None
         or contour_area / img_area <= threshold
@@ -438,7 +442,7 @@ def mask_to_contour(
                 mask_to_contour(masks[i], img_height, img_width, point, scores, False)
             )
         # if the typical area is not the default value...
-        if typical_area != 9999999999:
+        if typical_area is not None:
             # get the absolute differences between the typical area and the area of each mask
             absdiff = [np.abs(x[1] - typical_area) for x in results if x[1] is not None]
             if len(absdiff) == 0:
@@ -510,7 +514,7 @@ def process_annotation(
     # get the point annotation coordinates in [x,y,x,y...] format convert from string
     ann_point = [annotation.x, annotation.y]
     # check if the annotation point is invalid
-    if annotation_is_inside_contour(ann_point, img_width, img_height):
+    if annotation_is_out_of_bounds(ann_point, img_width, img_height):
         statistics["invalid"] += 1
         return None
 
@@ -532,6 +536,7 @@ def process_annotation(
         return {
             "image_id": image_id,
             "label_id": label_id,
+            "contour_area": contour_area,
             "confidence": 1,
             "points": contour.tolist(),
         }
@@ -548,6 +553,7 @@ def process_annotation(
         return {
             "image_id": image_id,
             "label_id": label_id,
+            "contour_area": contour_area,
             "confidence": 1,
             "points": contour.tolist(),
         }
@@ -562,6 +568,7 @@ def process_annotation(
         return {
             "image_id": image_id,
             "label_id": label_id,
+            "contour_area": contour_area,
             "confidence": 1,
             "points": contour.tolist(),
         }
@@ -578,6 +585,7 @@ def process_annotation(
             "label_id": label_id,
             "confidence": 1,
             "points": contour.tolist(),
+            "contour_area": contour_area,
         }  # ... try to use variations in the annotation point, which might be slightly off
     contour, contour_area = inaccurate_annotation_sam(
         crop_ann_point, x_off, y_off, croppedSAM, img_area, annotation.expected_area
@@ -591,10 +599,11 @@ def process_annotation(
             "label_id": label_id,
             "confidence": 1,
             "points": contour.tolist(),
+            "contour_area": contour_area,
         }  # ... zoom in even further
-        contour, contour_area, _, _, _, _ = super_zoom_sam(
-            ann_point, unsharp_image, sam, expected_area.get(label_id, 9999999999)
-        )
+    contour, contour_area, _, _, _, _ = super_zoom_sam(
+        ann_point, unsharp_image, sam, expected_area.get(label_id, 9999999999)
+    )
     statistics["negativePoint"] += 1
     # if it still doesn't work...
     if annotation_is_compatible(
@@ -605,9 +614,11 @@ def process_annotation(
             "label_id": label_id,
             "confidence": 1,
             "points": contour.tolist(),
+            "contour_area": contour_area,
         }  # ... zoom in even further
         # ... you're out of luck :-(
     statistics["noneworked"] += 1
+    return {}
 
 
 # apply unsharp masking to sharpen an image
@@ -703,6 +714,11 @@ def process_image(
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
     argparser.add_argument(
+        "action",
+        choices=["compute-area", "ptp"],
+        help="Which action to execute; `compute-area` if computing the average area of the prediction, `ptp` to execute the point to polygon conversion",
+    )
+    argparser.add_argument(
         "--image-path",
         "-i",
         type=str,
@@ -718,19 +734,16 @@ if __name__ == "__main__":
         help="Path to the image to apply point to polygon to",
     )
     argparser.add_argument(
-        "--labels",
+        "--label-id",
         "-l",
-        type=str,
-        nargs="+",
+        type=int,
         required=True,
-        help="Labels of possible annotations",
+        help="Label id of the annotations",
     )
     argparser.add_argument(
-        "--expected-areas",
+        "--expected-area",
         "-e",
         type=int,
-        nargs="+",
-        required=True,
         help="Expected area of the new annotation polygon",
     )
     argparser.add_argument(
@@ -756,22 +769,29 @@ if __name__ == "__main__":
     argparser.add_argument("--model-type", type=str, help="Model type")
     argparser.add_argument("--model-path", type=str, help="Path to model weights")
     argparser.add_argument(
-        "--output-file",
+        "--output-dir",
         type=str,
         help="Where to save the resulting predictions",
-        default="result.json",
+        default=".",
     )
     args = argparser.parse_args()
+    if args.action == "ptp":
+        if not isinstance(args.expected_areas, list) or len(args.expected_areas) != len(
+            args.annotation_ids
+        ):
+            raise Exception(
+                "Invalid argument combination. If executing the point to polygon conversion, the `--expected-areas` needs to be set and an expected area for each `--annotation-id` needs to be set (e.g. `--annotation-id 1 2 3 --expected-areas 10 20 15`"
+            )
 
     resulting_annotations = []
     image = Image.open(args.image_path)
     image_id = args.image_id
     points = [
         PointAnnotation(
-            int(point[0]), int(point[1]), expected_area, label, annotation_id
+            int(point[0]), int(point[1]), args.expected_area, args.label_id, annotation_id
         )
-        for point, expected_area, label, annotation_id in zip(
-            args.points, args.expected_areas, args.labels, args.annotation_ids
+        for point,  annotation_id in zip(
+            args.points, args.annotation_ids
         )
     ]
 
@@ -781,14 +801,6 @@ if __name__ == "__main__":
     sam_model.to(args.device)
     # create the sam predictor
     sam = SamPredictor(sam_model)
-
-    # if the user provided a json file with the max distance for each label load it, otherwise set it to None
-    """if args.label_max_distances:
-            # open the json dict with distance values for each label
-        with open(args.label_max_distances) as f:
-                distance_dict = json.load(f)
-    else:
-        distance_dict = None"""
 
     # init the statistics dict
     statistics = {
@@ -810,5 +822,9 @@ if __name__ == "__main__":
     # coco=build_coco_file(resulting_annotations,volumeid2csv)
     # with open(args.save+".json", "w") as f:
     #    json.dump(coco,f,cls=NumpyEncoder, indent=4)
-    with open(args.output_file, "w+") as out_file:
+    os.makedirs(args.output_dir, exist_ok=True)
+    with open(f"{args.output_dir}/{args.label_id}_{args.action}.json", "w+") as out_file:
         json.dump(resulting_annotations, fp=out_file, indent=4)
+
+    import logging
+    logging.error(f"Find the temp file in {args.output_dir}")
