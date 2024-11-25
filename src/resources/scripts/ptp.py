@@ -7,6 +7,7 @@ from collections import namedtuple
 from typing import Union
 
 import cv2
+import pandas as pd
 import numpy as np
 from PIL import Image
 from segment_anything import SamPredictor, sam_model_registry
@@ -378,9 +379,10 @@ def annotation_is_compatible(
         expected_annotation_area = contour_area
     return (
         contour is not None
-        or contour_area / img_area <= threshold
-        or contour_area <= (expected_annotation_area * 1.75)
-        or contour_area >= (expected_annotation_area * 0.25)
+        and contour_area is not None
+        and contour_area / img_area <= threshold
+        and contour_area <= (expected_annotation_area * 1.75)
+        and contour_area >= (expected_annotation_area * 0.25)
     )
 
 
@@ -453,6 +455,7 @@ def mask_to_contour(
             return results[idx]
         else:
             # otherwise get the one with the best score
+            #TODO: sometimes here it breaks
             idx = np.argsort(scores)[::-1]
             mask = np.reshape(masks[idx[0]], (img_height, img_width))
     else:
@@ -823,8 +826,15 @@ if __name__ == "__main__":
     # with open(args.save+".json", "w") as f:
     #    json.dump(coco,f,cls=NumpyEncoder, indent=4)
     os.makedirs(args.output_dir, exist_ok=True)
-    with open(f"{args.output_dir}/{args.label_id}_{args.action}.json", "w+") as out_file:
-        json.dump(resulting_annotations, fp=out_file, indent=4)
+    if args.action == "ptp":
+        with open(f"{args.output_dir}/{args.label_id}.json", "w+") as out_file:
+            json.dump(resulting_annotations, fp=out_file, indent=4)
+    elif  args.action == "compute-area":
+        df = pd.DataFrame(resulting_annotations)
+        df = df.loc[:,"contour_area"].sort_values()
+        with open(f"{args.output_dir}/{args.label_id}.json", "w+") as out_file:
+            json.dump(df.values.tolist(), fp=out_file, indent=4)
 
+        df.to_json(f"{args.output_dir}/{args.label_id}_{image_id}.json", indent=4)
     import logging
     logging.error(f"Find the temp file in {args.output_dir}")
