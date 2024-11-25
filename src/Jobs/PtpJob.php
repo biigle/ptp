@@ -123,6 +123,13 @@ class PtpJob extends BaseJob implements ShouldQueue
      *
      * @var ImageAnnotation[]
      */
+    public string $outputDir;
+
+    /**
+     * Whether to dismiss labels even if they were created by other users.
+     *
+     * @var ImageAnnotation[]
+     */
     public array $expectedArea ;
 
     /**
@@ -146,13 +153,16 @@ class PtpJob extends BaseJob implements ShouldQueue
      *
      * @return void
      */
-    public function __construct(User $user, array $annotations, string $jobType, int $labelId)
+    public function __construct(User $user, array $annotations, string $jobType, int $labelId, string $outputDir)
     {
         $this->queue = config('ptp.job_queue');
         $this->targetDisk = config('ptp.ptp_storage_disk');
         $this->user = $user;
+
         //Assumes that annotations are grouped by images
         $this->imageId = $annotations[0]['image'];
+        $this->outputDir = $outputDir;
+
         // We expect these annotations to be point annotations
         $this->points = [];
         $this->labelId= $labelId;
@@ -205,7 +215,7 @@ class PtpJob extends BaseJob implements ShouldQueue
         $imageId = $this->imageId;
         $annotationIds = implode(' ', $this->annotationIds);
         $jobType = $this->jobType;
-        $outputDir = config('ptp.temp_dir').'/'.$labelId;
+        $outputDir = $this->outputDir;
         $command = "{$python} -u {$script} {$jobType} -i {$imagePath} --image-id {$imageId} -p {$points} -l {$labelId}  -a {$annotationIds} --device {$device} --model-type {$modelType} --model-path {$modelPath} --output-dir {$outputDir} ";
         if ($jobType == 'ptp') {
             $command = $command." -e $expectedArea";

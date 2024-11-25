@@ -60,14 +60,10 @@ export default {
     },
     methods: {
         sendComputeAreaRequest(annotations){
-            console.log("Sending compute area request!");
-            console.log("Label: " + annotations[0].label_id);
             PtpJobApi.sendPtpJob({job_type: 'compute-area', label_id: annotations[0].label_id, volume_id: this.volumeId});
 
         },
         sendPtpRequest(label){
-            console.log("Sending PTP request");
-            console.log("Label: " + annotations[0].label_id);
             PtpJobApi.sendPtpJob({job_type: 'ptp', label_id: annotations[0].label_id, volume_id: this.volumeId});
         }
     }

@@ -3,8 +3,8 @@
 namespace Biigle\Modules\Ptp\Http\Controllers\Api;
 use Biigle\Http\Controllers\Api\Controller;
 use Biigle\Modules\Ptp\Jobs\PtpJob;
+use Biigle\Modules\Ptp\Jobs\UploadPtpExpectedAreaJob;
 use Biigle\ImageAnnotation;
-use Biigle\ImageAnnotationLabel;
 use Biigle\Volume;
 use Biigle\Label;
 use Illuminate\Http\Request;
@@ -12,8 +12,6 @@ use Illuminate\Support\Facades\Bus;
 use Response;
 
 //TODO: Doctstring
-//TODO: validate request
-//TODO: verify that user is editor on volume
 class PtpController extends Controller
 {
     /**
@@ -64,17 +62,17 @@ class PtpController extends Controller
         // image IDs
 
         $jobArray = [];
+        $outputDir = config('ptp.temp_dir').'/'.$jobType.'/'.$volume->id.'/'.$labelId;
 
         foreach ($imageAnnotationArray as $imageId => $imageAnnotationValues){
             //TODO: why do I need to put the args both when I create the new job and when I dispatch it?
-            $job = new PtpJob($request->user(), $imageAnnotationValues, $jobType, $labelId) ;
+            $job = new PtpJob($request->user(), $imageAnnotationValues, $jobType, $labelId, $outputDir) ;
             array_push($jobArray, $job);
         }
-        //TODO: add Job that uploads the correct data here. Maybe a Job that
-        Bus::batch($jobArray)->then(function() {
-            //TODO: Add here job for loading the data
-            return true;
-        } )->dispatch();
+        //TODO: if here
+        $uploadJob = new UploadPtpExpectedAreaJob($outputDir, $volume->id, $labelId);
+
+        Bus::chain([Bus::batch($jobArray), $uploadJob])->dispatch();
 
         return ['submitted' => true];
     }
