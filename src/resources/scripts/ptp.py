@@ -832,8 +832,6 @@ if __name__ == "__main__":
     elif  args.action == "compute-area":
         df = pd.DataFrame(resulting_annotations)
         df = df.loc[:,"contour_area"].sort_values()
-        with open(f"{args.output_dir}/{args.label_id}.json", "w+") as out_file:
-            json.dump(df.values.tolist(), fp=out_file, indent=4)
 
         df.to_json(f"{args.output_dir}/{args.label_id}_{image_id}.json", indent=4)
     import logging
