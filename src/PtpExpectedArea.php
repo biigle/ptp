@@ -27,6 +27,10 @@ class PtpExpectedArea extends Model
         'areas',
     ];
 
+    protected $casts = [
+        'areas' => 'array',
+    ];
+
     /**
      * Create a new factory instance for the model.
      *

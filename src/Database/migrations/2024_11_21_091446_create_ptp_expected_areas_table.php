@@ -13,12 +13,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('ptp_expected_areas', function (Blueprint $table) {
+            $table->bigIncrements('id');
             $table->integer('volume_id')->unsigned()->index();
             $table->foreign('volume_id')->references('id')->on('volumes')->onDelete('cascade');
             $table->integer('label_id')->unsigned()->index();
             $table->foreign('label_id')->references('id')->on('labels')->onDelete('cascade');
+            $table->jsonb('areas');
         });
-        DB::statement('ALTER TABLE ptp_expected_areas ADD COLUMN areas float[]');
     }
 
     /**

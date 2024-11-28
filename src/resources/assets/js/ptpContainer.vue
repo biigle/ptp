@@ -1,17 +1,21 @@
-<template> <div class="ptp-container" > <span><strong> Experimental </strong> Run the Point to polygon transformation using SAM</span>
-        <div class="image-label-container" v-for="groupedAnnotations in annotations">
-            <strong>{{ groupedAnnotations[0].label_name }} </strong>
+<template> <div class="ptp-container" >
             <div class="row">
-            <ptp-annotation-grid class="col-xs-6 ptp-cols":images="groupedAnnotations" ref="dismissGrid" empty-url="emptyUrl" :width="thumbnailWidth" :height="thumbnailHeight">
-</ptp-annotation-grid>
-<div class="col-xs-6 ptp-cols"><span>Here will be the graph</span></div>
-<div class="col-xs-3 ptp-button-cols"><a class="big-button" target="_blank" title="Compute Expected Polygon Area using the SAM Model" @click="sendComputeAreaRequest(groupedAnnotations)"><i class="fa fa-chart-area"></i></a></div>
-<div class="col-xs-3 ptp-button-cols"><a class="big-button" target="_blank" title="Run Point to Polygon Conversion"><i class="fa fa-draw-polygon " aria-hidden="true" @click="sendPtpRequest(groupedAnnotations)"></i></a></div>
+        <div class="col-xs-8">
+        <h3>Create a new Point to Polygon job (experimental)</h3>
+        <span> Run the Point to polygon transformation using SAM</span><br>
+            <span>Select for which label should we run the Point to Point annotation:</span>
+                <select class='form-control' v-model=selectedLabel >
+                    <option v-for="label in labels" :value="label.id">{{ label.name }}</option>
+                </select>
+            <!--<ptp-annotation-grid class="col-xs-6 ptp-cols":images="groupedAnnotations" ref="dismissGrid" empty-url="emptyUrl" :width="thumbnailWidth" :height="thumbnailHeight">
+            </ptp-annotation-grid>-->
 
+<div class=""><span>Here will be the graph</span></div>
+<div class=""><a class="big-button" target="_blank" title="Run Point to Polygon Conversion"><i class="fa fa-draw-polygon " aria-hidden="true" @click="sendPtpRequest()"></i></a></div>
 
             </div>
     </div>
- </div>
+    </div>
 </template>
 <script>
 import {AnnotationPatch, Events} from './import';
@@ -45,26 +49,17 @@ export default {
             thumbnailWidth: biigle.$require('ptp.thumbnailWidth'),
             thumbnailHeight: biigle.$require('ptp.thumbnailHeight'),
             volumeId: biigle.$require('ptp.volumeId'),
+            selectedLabel: null,
         }
     },
-    provide() {
-        const appData = {}
+   methods: {
 
-        // Need defineProperty to maintain reactivity.
-        // See https://stackoverflow.com/questions/65718651/how-do-i-make-vue-2-provide-inject-api-reactive
-        Object.defineProperty(appData, "showAnnotationOutlines", {
-            get: () => this.showAnnotationOutlines,
-        })
-
-        return { 'outlines': appData };
-    },
-    methods: {
-        sendComputeAreaRequest(annotations){
-            PtpJobApi.sendPtpJob({job_type: 'compute-area', label_id: annotations[0].label_id, volume_id: this.volumeId});
-
-        },
-        sendPtpRequest(label){
-            PtpJobApi.sendPtpJob({job_type: 'ptp', label_id: annotations[0].label_id, volume_id: this.volumeId});
+        sendPtpRequest(){
+            if (!this.selectedLabel){
+                //TODO: raise error if not selected
+                return
+            }
+            PtpJobApi.sendPtpJob({label_id: this.selectedLabel, volume_id: this.volumeId});
         }
     }
 }

@@ -779,7 +779,7 @@ if __name__ == "__main__":
     )
     args = argparser.parse_args()
     if args.action == "ptp":
-        if not isinstance(args.expected_areas, list) or len(args.expected_areas) != len(
+        if not isinstance(args.expected_area, int) or len(args.points) != len(
             args.annotation_ids
         ):
             raise Exception(
@@ -827,11 +827,11 @@ if __name__ == "__main__":
     #    json.dump(coco,f,cls=NumpyEncoder, indent=4)
     os.makedirs(args.output_dir, exist_ok=True)
     if args.action == "ptp":
-        with open(f"{args.output_dir}/{args.label_id}.json", "w+") as out_file:
+        with open(f"{args.output_dir}/{args.label_id}_{image_id}.json", "w+") as out_file:
             json.dump(resulting_annotations, fp=out_file, indent=4)
     elif  args.action == "compute-area":
         df = pd.DataFrame(resulting_annotations)
-        df = df.loc[:,"contour_area"].sort_values()
+        df = df.loc[:, "contour_area"].sort_values()
 
         df.to_json(f"{args.output_dir}/{args.label_id}_{image_id}.json", indent=4)
     import logging

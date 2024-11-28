@@ -5,6 +5,7 @@ use Biigle\Jobs\Job as BaseJob;
 use Biigle\User;
 use Biigle\Image;
 use Biigle\ImageAnnotations;
+use Biigle\Modules\Ptp\PtpExpectedArea;
 use Exception;
 use File;
 use FileCache;
@@ -130,13 +131,6 @@ class PtpJob extends BaseJob implements ShouldQueue
      *
      * @var ImageAnnotation[]
      */
-    public array $expectedArea ;
-
-    /**
-     * Whether to dismiss labels even if they were created by other users.
-     *
-     * @var ImageAnnotation[]
-     */
     public array $annotationIds;
 
     /**
@@ -166,13 +160,11 @@ class PtpJob extends BaseJob implements ShouldQueue
         // We expect these annotations to be point annotations
         $this->points = [];
         $this->labelId= $labelId;
-        $this->expectedArea = [];
         $this->annotationIds = [];
         $this->jobType = $jobType;
         foreach ($annotations as $annotation) {
             $this->points[] = implode(',', $annotation['points']);
             //TODO: find a better way to pass this arg.
-            $this->expectedArea[] = $annotation['expected_area'];
             $this->annotationIds[] = $annotation['annotation_id'];
         }
 
@@ -185,21 +177,38 @@ class PtpJob extends BaseJob implements ShouldQueue
      */
     public function handle()
     {
-        try {
-            $image = Image::findOrFail($this->imageId);
-            FileCache::getOnce($image, function ($image, $path){
-                $this->python($path);
-            });
-        } catch (Exception $e) {
-            return $e->getMessage();
-        };
-        //unsure about this? I deleted the image files by mistake once and I saw that in other places it
-        // is added
-
+        $image = Image::findOrFail($this->imageId);
+        $volumeId = $image->volume->id;
+        FileCache::getOnce($image, function ($image, $path) use ($volumeId){
+            $this->python($path, $volumeId);
+        });
     }
-
+    /**
+     * Find median of array
+     *
+     * @param  $array
+     * @return integer
+     */
+    protected function findMedian(array $array): int
+    {
+        sort($array);
+        $count = count($array);
+        $index = intdiv($count, 2);
+        if ($count % 2 == 0) {    // count is odd
+            return $array[$index];
+        } else {                   // count is even
+            return ($array[$index-1] + $array[$index]) / 2;
+        }
+    }
     //TODO: add docstring
-    protected function python(string $imagePath, string $log = 'log.txt')
+    /**
+     * Run the python script for Point to Polygon conversion
+     *
+     * @param  $imagePath The path the image is found
+     * @param  $volumeId The ID of the volume
+     * @param  $log File where the logs from the python script will be found
+     */
+    protected function python(string $imagePath, int $volumeId, string $log = 'log.txt')
     {
         $code = 0;
         $lines = [];
@@ -208,7 +217,6 @@ class PtpJob extends BaseJob implements ShouldQueue
         $logFile = __DIR__.'/'.$log;
         $points = implode(' ',$this->points);
         $labelId = $this->labelId;
-        $expectedArea = $this->expectedArea;
         $device = config('ptp.device');
         $modelPath = config('ptp.model_path');
         $modelType = config('ptp.model_type');
@@ -218,7 +226,9 @@ class PtpJob extends BaseJob implements ShouldQueue
         $outputDir = $this->outputDir;
         $command = "{$python} -u {$script} {$jobType} -i {$imagePath} --image-id {$imageId} -p {$points} -l {$labelId}  -a {$annotationIds} --device {$device} --model-type {$modelType} --model-path {$modelPath} --output-dir {$outputDir} ";
         if ($jobType == 'ptp') {
-            $command = $command." -e $expectedArea";
+            $expectedAreaValues = json_decode(PtpExpectedArea::where('label_id', $labelId)->where('volume_id', $volumeId)->first()->areas);
+            $medianArea = $this->findMedian($expectedAreaValues);
+            $command = $command." -e $medianArea";
         }
         exec("$command > {$logFile} 2>&1", $lines, $code);
 
@@ -226,7 +236,5 @@ class PtpJob extends BaseJob implements ShouldQueue
             $lines = File::get($logFile);
             throw new Exception("Error while executing python script'{$script}':\n{$lines}", $code);
         }
-
     }
-
 }

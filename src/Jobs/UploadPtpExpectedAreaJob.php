@@ -59,7 +59,7 @@ class UploadPtpExpectedAreaJob extends BaseJob implements ShouldQueue
         try {
             $files = scandir($this->inputDir);
         } catch (Exception $e){
-            throw new Exception("Unable to load files from $this->inputDir");
+            throw new Exception("Unable to load files from $this->inputDir: $e");
         }
         $values = [];
         foreach ($files as $file) {
@@ -79,8 +79,9 @@ class UploadPtpExpectedAreaJob extends BaseJob implements ShouldQueue
 
         $labelId = $this->labelId;
         $volumeId = $this->volumeId;
+        $values = json_encode($values);
 
-        PtpExpectedArea::factory->create(['volume_id'=> $volumeId, 'label_id' => $labelId, 'areas' => $values]);
+        PtpExpectedArea::updateOrCreate(['volume_id'=> $volumeId, 'label_id' => $labelId, 'areas' => $values]);
 
     }
 }

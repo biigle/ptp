@@ -26,7 +26,7 @@ class PtpExpectedAreaFactory extends Factory
         return [
             'label_id' => Label::factory(),
             'volume_id' => Volume::factory(),
-            'areas' => range(0, 383),
+            'areas' => json_encode([]),
         ];
     }
 }
