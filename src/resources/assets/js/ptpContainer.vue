@@ -11,7 +11,7 @@
             </ptp-annotation-grid>-->
 
 <div class=""><span>Here will be the graph</span></div>
-<div class=""><a class="big-button" target="_blank" title="Run Point to Polygon Conversion"><i class="fa fa-draw-polygon " aria-hidden="true" @click="sendPtpRequest()"></i></a></div>
+<div class=""><a class="" target="_blank" title="Run Point to Polygon Conversion"><i class="fa fa-draw-polygon big-button" aria-hidden="true" @click="sendPtpRequest()"></i></a></div>
 
             </div>
     </div>

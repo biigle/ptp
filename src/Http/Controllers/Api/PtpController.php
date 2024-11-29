@@ -4,6 +4,7 @@ namespace Biigle\Modules\Ptp\Http\Controllers\Api;
 use Biigle\Http\Controllers\Api\Controller;
 use Biigle\Modules\Ptp\Jobs\PtpJob;
 use Biigle\Modules\Ptp\Jobs\UploadPtpExpectedAreaJob;
+use Biigle\Modules\Ptp\Jobs\UploadConvertedAnnotationsJob;
 use Biigle\Modules\Ptp\PtpExpectedArea;
 use Biigle\ImageAnnotation;
 use Biigle\Volume;
@@ -17,27 +18,20 @@ class PtpController extends Controller
 {
     /**
      */
-    public function generatePtpJob(Request $request)
-    {
+    public function generatePtpJob(Request $request) {
         $this->validate($request, ['label_id' => 'integer', 'volume_id' => 'integer']);
-
         $volume = Volume::findOrFail($request->volume_id);
-        $this->authorize('edit-in', $volume);
-        Label::findOrFail($request->label_id);
+        $this->authorize('edit-in', $volume); Label::findOrFail($request->label_id);
         $imageAnnotationArray = [];
         $labelId = $request->label_id;
-
-        $pointShapeId = 1;
-
-        //Find annotations with selected label in desired volume
+        $pointShapeId = 1; //Find annotations with selected label in desired volume
         $annotations = ImageAnnotation::join('image_annotation_labels','image_annotations.id', '=', 'image_annotation_labels.annotation_id')
             ->join('images','image_annotations.image_id', '=','images.id')
             ->where('image_annotation_labels.label_id', $labelId)
             ->where('images.volume_id', $volume->id)
             ->where('image_annotations.shape_id', $pointShapeId)
-            ->select('image_annotations.id as id', 'images.id as image_id', 'image_annotations.points as points','image_annotations.shape_id as shape_id')->get();
-
-        // group per file
+            ->select('image_annotations.id as id', 'images.id as image_id', 'image_annotations.points as points','image_annotations.shape_id as shape_id')
+            ->get();
         foreach ($annotations as $annotation) {
             if (!isset($imageAnnotationArray[$annotation->image_id])) {
                 $imageAnnotationArray[$annotation->image_id] = [];
@@ -61,23 +55,29 @@ class PtpController extends Controller
         if ($expectedAreaCount == 0){
             $expectedAreaJobs = [];
             $outputDir = config('ptp.temp_dir').'/compute-area/'.$volume->id.'/'.$labelId;
+
             foreach ($imageAnnotationArray as $imageId => $imageAnnotationValues){
                 //TODO: why do I need to put the args both when I create the new job and when I dispatch it?
-                $job = new PtpJob($request->user(), $imageAnnotationValues, 'compute-area', $labelId, $outputDir) ;
+                $outputFile = "$outputDir/".$labelId."_"."$imageId.json";
+                $job = new PtpJob($request->user(), $imageAnnotationValues, 'compute-area', $labelId, $outputFile);
                 array_push($expectedAreaJobs, $job);
             }
             array_push($jobArray, Bus::batch($expectedAreaJobs));
             $uploadJob = new UploadPtpExpectedAreaJob($outputDir, $volume->id, $labelId);
             array_push($jobArray, $uploadJob);
         }
+
         $ptpConversionJobs = [];
         $outputDir = config('ptp.temp_dir').'/ptp/'.$volume->id.'/'.$labelId;
+
         foreach ($imageAnnotationArray as $imageId => $imageAnnotationValues){
-             $job = new PtpJob($request->user(), $imageAnnotationValues, 'ptp', $labelId, $outputDir) ;
+            $outputFile = "$outputDir/".$labelId."_"."$imageId.json";
+            $job = new PtpJob($request->user(), $imageAnnotationValues, 'ptp', $labelId, $outputFile) ;
              array_push($ptpConversionJobs, $job);
         }
+        $job = new UploadConvertedAnnotationsJob($outputDir);
         //TODO: add the job that updates the annotations
-        array_push($jobArray, Bus::batch($ptpConversionJobs));
+        array_push($jobArray, Bus::batch($ptpConversionJobs), $job);
 
         Bus::chain($jobArray)->dispatch();
 

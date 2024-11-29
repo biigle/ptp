@@ -11,10 +11,10 @@ use File;
 use FileCache;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Bus\Batchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Storage;
 
 class PtpJob extends BaseJob implements ShouldQueue
 {
@@ -124,7 +124,7 @@ class PtpJob extends BaseJob implements ShouldQueue
      *
      * @var ImageAnnotation[]
      */
-    public string $outputDir;
+    public string $outputFile;
 
     /**
      * Whether to dismiss labels even if they were created by other users.
@@ -147,7 +147,7 @@ class PtpJob extends BaseJob implements ShouldQueue
      *
      * @return void
      */
-    public function __construct(User $user, array $annotations, string $jobType, int $labelId, string $outputDir)
+    public function __construct(User $user, array $annotations, string $jobType, int $labelId, string $outputFile)
     {
         $this->queue = config('ptp.job_queue');
         $this->targetDisk = config('ptp.ptp_storage_disk');
@@ -155,7 +155,7 @@ class PtpJob extends BaseJob implements ShouldQueue
 
         //Assumes that annotations are grouped by images
         $this->imageId = $annotations[0]['image'];
-        $this->outputDir = $outputDir;
+        $this->outputFile = $outputFile;
 
         // We expect these annotations to be point annotations
         $this->points = [];
@@ -223,8 +223,8 @@ class PtpJob extends BaseJob implements ShouldQueue
         $imageId = $this->imageId;
         $annotationIds = implode(' ', $this->annotationIds);
         $jobType = $this->jobType;
-        $outputDir = $this->outputDir;
-        $command = "{$python} -u {$script} {$jobType} -i {$imagePath} --image-id {$imageId} -p {$points} -l {$labelId}  -a {$annotationIds} --device {$device} --model-type {$modelType} --model-path {$modelPath} --output-dir {$outputDir} ";
+        $outputFile = $this->outputFile;
+        $command = "{$python} -u {$script} {$jobType} -i {$imagePath} --image-id {$imageId} -p {$points} -l {$labelId}  -a {$annotationIds} --device {$device} --model-type {$modelType} --model-path {$modelPath} --output-file {$outputFile} ";
         if ($jobType == 'ptp') {
             $expectedAreaValues = json_decode(PtpExpectedArea::where('label_id', $labelId)->where('volume_id', $volumeId)->first()->areas);
             $medianArea = $this->findMedian($expectedAreaValues);
@@ -232,9 +232,13 @@ class PtpJob extends BaseJob implements ShouldQueue
         }
         exec("$command > {$logFile} 2>&1", $lines, $code);
 
+
         if ($code !== 0) {
             $lines = File::get($logFile);
             throw new Exception("Error while executing python script'{$script}':\n{$lines}", $code);
         }
+
+        $storage = Storage::disk(config('ptp.ptp_storage_disk'));
+        $storage->put($outputFile, file_get_contents($outputFile));
     }
 }

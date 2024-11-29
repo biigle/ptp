@@ -1,6 +1,6 @@
 <?php
 namespace Biigle\Modules\Ptp\Jobs;
-use Biigle\Modules\Ptp\PtpExpectedArea;
+use Biigle\ImageAnnotations;
 use Biigle\Jobs\Job as BaseJob;
 use Exception;
 use Illuminate\Bus\Queueable;
@@ -8,11 +8,11 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Bus\Batchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-
+use Storage;
 /**
  * Upload the result of  computing the expected area for Point to Polygon Conversion to the DB
  */
-class UploadPtpExpectedAreaJob extends BaseJob implements ShouldQueue
+class UploadConvertedAnnotationsJob extends BaseJob implements ShouldQueue
 {
     use Batchable, InteractsWithQueue, Queueable, SerializesModels;
     /**
@@ -29,25 +29,9 @@ class UploadPtpExpectedAreaJob extends BaseJob implements ShouldQueue
      */
     public string $inputDir;
 
-    /**
-     * ID of the volume associated with this area
-     *
-     * @var string
-     */
-    public int $volumeId;
-
-    /**
-     * ID of the label associated with this area
-     *
-     * @var string
-     */
-    public int $labelId;
-
-    public function __construct(string $inputDir, int $volumeId, int $labelId)
+    public function __construct(string $inputDir)
     {
         $this->inputDir = $inputDir;
-        $this->volumeId = $volumeId;
-        $this->labelId = $labelId;
     }
     /**
      * Execute the job.
@@ -62,28 +46,20 @@ class UploadPtpExpectedAreaJob extends BaseJob implements ShouldQueue
         } catch (Exception $e){
             throw new Exception("Unable to load files from $this->inputDir: $e");
         }
-        $values = [];
         foreach ($files as $file) {
             if ($file == '.' || $file == '..'){
                 continue;
             }
-            $json = file_get_contents($this->inputDir.'/'.$file);
-            if ($json == false){
-                throw new Exception("Unable to read file $file");
-            }
-            $jsonData = json_decode($json, true);
+            $jsonData = $storage->json($file);
             if (is_null($jsonData)) {
                 throw new Exception("Error while reading file $file");
             }
-            array_push($values, ...$jsonData);
+            foreach ($jsonData as $annotation) {
+                $newAnnotation = ImageAnnotations::findOrFail($annotation['annotation_id'])->replicate();
+                $newAnnotation->points = $annotation['points'];
+                $newAnnotation->save();
+            }
         }
-
-        $labelId = $this->labelId;
-        $volumeId = $this->volumeId;
-        $values = json_encode($values);
-
-        PtpExpectedArea::updateOrCreate(['volume_id'=> $volumeId, 'label_id' => $labelId, 'areas' => $values]);
-
     }
 }
 

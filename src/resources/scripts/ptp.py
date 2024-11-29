@@ -772,7 +772,7 @@ if __name__ == "__main__":
     argparser.add_argument("--model-type", type=str, help="Model type")
     argparser.add_argument("--model-path", type=str, help="Path to model weights")
     argparser.add_argument(
-        "--output-dir",
+        "--output-file",
         type=str,
         help="Where to save the resulting predictions",
         default=".",
@@ -825,14 +825,13 @@ if __name__ == "__main__":
     # coco=build_coco_file(resulting_annotations,volumeid2csv)
     # with open(args.save+".json", "w") as f:
     #    json.dump(coco,f,cls=NumpyEncoder, indent=4)
-    os.makedirs(args.output_dir, exist_ok=True)
+    os.makedirs(os.path.dirname(args.output_file), exist_ok=True)
     if args.action == "ptp":
-        with open(f"{args.output_dir}/{args.label_id}_{image_id}.json", "w+") as out_file:
+        with open(args.output_file, "w+") as out_file:
             json.dump(resulting_annotations, fp=out_file, indent=4)
     elif  args.action == "compute-area":
         df = pd.DataFrame(resulting_annotations)
         df = df.loc[:, "contour_area"].sort_values()
 
-        df.to_json(f"{args.output_dir}/{args.label_id}_{image_id}.json", indent=4)
-    import logging
-    logging.error(f"Find the temp file in {args.output_dir}")
+        df.to_json(args.output_file, indent=4)
+
