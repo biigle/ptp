@@ -1,10 +1,9 @@
 <?php
 namespace Biigle\Modules\Ptp\Jobs;
-use Biigle\Modules\Maia\GenericImage;
 use Biigle\Jobs\Job as BaseJob;
 use Biigle\User;
 use Biigle\Image;
-use Biigle\ImageAnnotations;
+use Biigle\ImageAnnotation;
 use Biigle\Modules\Ptp\PtpExpectedArea;
 use Exception;
 use File;

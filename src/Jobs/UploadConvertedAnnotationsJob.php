@@ -1,6 +1,6 @@
 <?php
 namespace Biigle\Modules\Ptp\Jobs;
-use Biigle\ImageAnnotations;
+use Biigle\ImageAnnotation;
 use Biigle\Jobs\Job as BaseJob;
 use Exception;
 use Illuminate\Bus\Queueable;
@@ -55,7 +55,7 @@ class UploadConvertedAnnotationsJob extends BaseJob implements ShouldQueue
                 throw new Exception("Error while reading file $file");
             }
             foreach ($jsonData as $annotation) {
-                $newAnnotation = ImageAnnotations::findOrFail($annotation['annotation_id'])->replicate();
+                $newAnnotation = ImageAnnotation::findOrFail($annotation['annotation_id'])->replicate();
                 $newAnnotation->points = $annotation['points'];
                 $newAnnotation->save();
             }
