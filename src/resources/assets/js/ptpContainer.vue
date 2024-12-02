@@ -18,7 +18,7 @@
     </div>
 </template>
 <script>
-import {AnnotationPatch, Events} from './import';
+import {AnnotationPatch, Messages} from './import';
 import PtpAnnotationGrid from './components/ptpAnnotationGrid'
 import PtpJobApi from './api/ptpJob'
 
@@ -57,6 +57,7 @@ export default {
         sendPtpRequest(){
             if (!this.selectedLabel){
                 //TODO: raise error if not selected
+                Messages.danger("No label selected!");
                 return
             }
             PtpJobApi.sendPtpJob({label_id: this.selectedLabel, volume_id: this.volumeId});
