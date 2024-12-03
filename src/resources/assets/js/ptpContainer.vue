@@ -22,16 +22,13 @@
     </div>
 </template>
 <script>
-import {AnnotationPatch, Messages} from './import';
-import PtpAnnotationGrid from './components/ptpAnnotationGrid'
+import {Messages} from './import';
 import PtpJobApi from './api/ptpJob'
 
 
 export default {
     data(){
         let annotationsPerLabel = {};
-        //TODO: Change to a more sensible name
-        let thumbnailUrl = biigle.$require('ptp.imageUrls');
         let imageIndexes = {};
         biigle.$require('ptp.annotations').forEach(
             function (ann) {
@@ -45,9 +42,6 @@ export default {
             annotations: annotationsPerLabel,
             showAnnotationOutlines: true,
             labels: biigle.$require('ptp.labels'),
-            emptyUrl: biigle.$require('ptp.thumbnailEmptyUrl'),
-            thumbnailWidth: biigle.$require('ptp.thumbnailWidth'),
-            thumbnailHeight: biigle.$require('ptp.thumbnailHeight'),
             volumeId: biigle.$require('ptp.volumeId'),
             selectedLabel: null,
         }
