@@ -823,10 +823,6 @@ if __name__ == "__main__":
             annotation, image, image_id, sam, statistics
         )
     # if the save argument is given save the annotations to the given path
-    # TODO needs fixing for sam based annotation
-    # coco=build_coco_file(resulting_annotations,volumeid2csv)
-    # with open(args.save+".json", "w") as f:
-    #    json.dump(coco,f,cls=NumpyEncoder, indent=4)
     os.makedirs(os.path.dirname(args.output_file), exist_ok=True)
     if args.action == "ptp":
         with open(args.output_file, "w+") as out_file:
