@@ -84,14 +84,14 @@ class PtpJob extends BaseJob implements ShouldQueue
     //TODO: Fix comments below and remove the useless ones above
 
     /**
-     * Whether to dismiss labels even if they were created by other users.
+     * ID of the image where PTP is applied
      *
-     * @var Image
+     * @var int
      */
     public int $imageId ;
 
     /**
-     * Whether to dismiss labels even if they were created by other users.
+     * Type of the Job between compute-area and ptp
      *
      * @var string
      */
@@ -99,45 +99,39 @@ class PtpJob extends BaseJob implements ShouldQueue
 
 
     /**
-     * Whether to dismiss labels even if they were created by other users.
+     * Array of annotations
      *
-     * @var ImageAnnotation[]
+     * @var array
      */
     public array $annotations ;
 
     /**
-     * Whether to dismiss labels even if they were created by other users.
+     * Array of annotation coordinates (Points)
      *
-     * @var ImageAnnotation[]
+     * @var array
      */
     public array $points ;
 
     /**
-     * Whether to dismiss labels even if they were created by other users.
+     * ID of the label of the annotation to convert
      *
-     * @var ImageAnnotation[]
+     * @var int
      */
     public int $labelId ;
     /**
-     * Whether to dismiss labels even if they were created by other users.
+     * Output file where the PTP job output will be stored
      *
-     * @var ImageAnnotation[]
+     * @var string
      */
     public string $outputFile;
 
     /**
-     * Whether to dismiss labels even if they were created by other users.
+     * IDs of the annotations to convert
      *
-     * @var ImageAnnotation[]
+     * @var array
      */
     public array $annotationIds;
 
-    /**
-     * Whether to dismiss labels even if they were created by other users.
-     *
-     * @var string
-     */
-    public string $targetDisk;
     /**
      * Create a new job instance.
      *
@@ -199,7 +193,6 @@ class PtpJob extends BaseJob implements ShouldQueue
             return ($array[$index-1] + $array[$index]) / 2;
         }
     }
-    //TODO: add docstring
     /**
      * Run the python script for Point to Polygon conversion
      *
@@ -213,7 +206,7 @@ class PtpJob extends BaseJob implements ShouldQueue
         $lines = [];
         $python = config('ptp.python');
         $script = config('ptp.ptp_script');
-        $logFile = __DIR__.'/'.$log;
+        $logFile = config('ptp.temp_dir').'/'.$log;
         $points = implode(' ',$this->points);
         $labelId = $this->labelId;
         $device = config('ptp.device');

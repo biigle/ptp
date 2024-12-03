@@ -11,12 +11,19 @@ use Biigle\Volume;
 use Biigle\Label;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Bus;
-use Response;
 
-//TODO: Doctstring
+/**
+ * Controller used for creating a PTP Job Chain
+ */
 class PtpController extends Controller
 {
     /**
+     * Generate Point to Polygon Job Chain.
+     * This method generates, based on the request. The jobs generated are first for computing and uploading the expected areas of converted polygons.
+     * Then, it generates a job for executing the conversion and then upload the new annotations to the DB
+     *
+     * @param  $request
+     * @return
      */
     public function generatePtpJob(Request $request) {
         $this->validate($request, ['label_id' => 'integer', 'volume_id' => 'integer']);
@@ -36,7 +43,6 @@ class PtpController extends Controller
             if (!isset($imageAnnotationArray[$annotation->image_id])) {
                 $imageAnnotationArray[$annotation->image_id] = [];
             }
-            //TODO: we should load the label dimension here
             $imageAnnotationArray[$annotation->image_id][] = [
                 'annotation_id' => $annotation->id,
                 'points' => $annotation->points,
@@ -57,13 +63,12 @@ class PtpController extends Controller
             $outputDir = config('ptp.temp_dir').'/compute-area/'.$volume->id.'/'.$labelId;
 
             foreach ($imageAnnotationArray as $imageId => $imageAnnotationValues){
-                //TODO: why do I need to put the args both when I create the new job and when I dispatch it?
                 $outputFile = "$outputDir/".$labelId."_"."$imageId.json";
                 $job = new PtpJob($request->user(), $imageAnnotationValues, 'compute-area', $labelId, $outputFile);
                 array_push($expectedAreaJobs, $job);
             }
             array_push($jobArray, Bus::batch($expectedAreaJobs));
-            $uploadJob = new UploadPtpExpectedAreaJob($outputDir, $volume->id, $labelId);
+            $uploadJob = new UploadPtpExpectedAreaJob($outputFile, $volume->id, $labelId);
             array_push($jobArray, $uploadJob);
         }
 
@@ -76,7 +81,7 @@ class PtpController extends Controller
              array_push($ptpConversionJobs, $job);
         }
         $job = new UploadConvertedAnnotationsJob($outputDir, $request->user());
-        //TODO: add the job that updates the annotations
+
         array_push($jobArray, Bus::batch($ptpConversionJobs), $job);
 
         Bus::chain($jobArray)->dispatch();
