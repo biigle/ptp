@@ -40,7 +40,6 @@ return [
     | Path for temporary files
     */
     'temp_dir' => sys_get_temp_dir(),
-    // TODO: set to sys_get_temp_dir() after testing
     /*
     | The device to compute the SAM embedding on.
     |

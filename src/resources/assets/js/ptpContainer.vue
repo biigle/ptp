@@ -50,7 +50,6 @@ export default {
 
         sendPtpRequest(){
             if (!this.selectedLabel){
-                //TODO: raise error if not selected
                 Messages.danger("No label selected!");
                 return
             }
