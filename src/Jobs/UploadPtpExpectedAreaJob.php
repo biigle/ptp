@@ -8,6 +8,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Bus\Batchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Storage;
 
 /**
  * Upload the result of  computing the expected area for Point to Polygon Conversion to the DB
@@ -67,14 +68,8 @@ class UploadPtpExpectedAreaJob extends BaseJob implements ShouldQueue
             if ($file == '.' || $file == '..'){
                 continue;
             }
-            $json = file_get_contents($this->inputDir.'/'.$file);
-            if ($json == false){
-                throw new Exception("Unable to read file $file");
-            }
-            $jsonData = json_decode($json, true);
-            if (is_null($jsonData)) {
-                throw new Exception("Error while reading file $file");
-            }
+            $jsonData = $storage->json($file);
+
             array_push($values, ...$jsonData);
         }
 

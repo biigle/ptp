@@ -1,6 +1,8 @@
 <?php
 namespace Biigle\Modules\Ptp\Jobs;
 use Biigle\ImageAnnotation;
+use Biigle\ImageAnnotationLabel;
+use Biigle\User;
 use Biigle\Jobs\Job as BaseJob;
 use Exception;
 use Illuminate\Bus\Queueable;
@@ -23,15 +25,24 @@ class UploadConvertedAnnotationsJob extends BaseJob implements ShouldQueue
     public $queue;
 
     /**
+     * User responsible for the Point to Polygon conversion.
+     *
+     * @var User
+     */
+    public User $user;
+
+    /**
      * The queue to push this job to.
      *
      * @var string
      */
     public string $inputDir;
 
-    public function __construct(string $inputDir)
+
+    public function __construct(string $inputDir, User $user)
     {
         $this->inputDir = $inputDir;
+        $this->user = $user;
     }
     /**
      * Execute the job.
@@ -54,10 +65,20 @@ class UploadConvertedAnnotationsJob extends BaseJob implements ShouldQueue
             if (is_null($jsonData)) {
                 throw new Exception("Error while reading file $file");
             }
+            $polygonShape = 3;
             foreach ($jsonData as $annotation) {
                 $newAnnotation = ImageAnnotation::findOrFail($annotation['annotation_id'])->replicate();
                 $newAnnotation->points = $annotation['points'];
+                $newAnnotation->shape_id = $polygonShape;
                 $newAnnotation->save();
+                $imageAnnotationLabel = [
+                    'label_id' => $annotation['label_id'],
+                    'annotation_id' => $newAnnotation->id,
+                    'user_id' => $this->user->id,
+                    'confidence' => 1.0,
+                ];
+                ImageAnnotationLabel::insert($imageAnnotationLabel) ;
+
             }
         }
     }

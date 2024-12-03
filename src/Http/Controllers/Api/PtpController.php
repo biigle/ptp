@@ -75,7 +75,7 @@ class PtpController extends Controller
             $job = new PtpJob($request->user(), $imageAnnotationValues, 'ptp', $labelId, $outputFile) ;
              array_push($ptpConversionJobs, $job);
         }
-        $job = new UploadConvertedAnnotationsJob($outputDir);
+        $job = new UploadConvertedAnnotationsJob($outputDir, $request->user());
         //TODO: add the job that updates the annotations
         array_push($jobArray, Bus::batch($ptpConversionJobs), $job);
 
