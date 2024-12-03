@@ -1,5 +1,6 @@
 import argparse
 import json
+import logging
 import math
 import os
 import random
@@ -112,7 +113,7 @@ def inaccurate_annotation_sam(
         )
         # convert the masks to contours
         contour, contour_area = mask_to_contour(
-            masks, 1024, 1024, crop_ann_point, scores, True, expected_aresa
+            masks, 1024, 1024, crop_ann_point, scores, True, expected_area
         )
         # if there is a contour/area add it to the list, otherwise just discard it
         if contour is not None and contour_area / img_area <= 0.04:
@@ -128,11 +129,8 @@ def inaccurate_annotation_sam(
         contour_area = allareas[0]
     # if more then one contour was found compare to known areas
     elif len(allcontours) > 1:
-        # if there are no previous areas return None (might be the first object with that label)
-        if previous_area is None:
-            return [None, None]
-        # get the minium difference between previous area and current area
-        idx = np.argmin(np.abs(np.array(allareas) - expected_aresa))
+        # get the minimum difference between previous area and current area
+        idx = np.argmin(np.abs(np.array(allareas) - expected_area))
         # take the contour with the smallest difference
         contour = allcontours[idx]
         contour_area = allareas[idx]
@@ -539,11 +537,11 @@ def process_annotation(
         return {
             "image_id": image_id,
             "label_id": label_id,
+            "annotation_id": annotation.annotation_id,
             "contour_area": contour_area,
             "confidence": 1,
             "points": contour.tolist(),
         }
-
         # ... zoom in on the annotation and try again (SAM uses max 1024 for the longest edge)
     contour, contour_area, x_off, y_off, crop_ann_point, croppedSAM = zoom_sam(
         ann_point, unsharp_image, sam, annotation.expected_area
@@ -561,6 +559,7 @@ def process_annotation(
             "points": contour.tolist(),
         }
         # ... use negative points in addition
+
     contour, contour_area = negative_point_sam(
         crop_ann_point, x_off, y_off, croppedSAM, annotation.expected_area
     )
@@ -605,7 +604,7 @@ def process_annotation(
             "contour_area": contour_area,
         }  # ... zoom in even further
     contour, contour_area, _, _, _, _ = super_zoom_sam(
-        ann_point, unsharp_image, sam, expected_area.get(label_id, 9999999999)
+        ann_point, unsharp_image, sam, annotation.expected_area
     )
     statistics["negativePoint"] += 1
     # if it still doesn't work...
@@ -734,7 +733,7 @@ if __name__ == "__main__":
         type=str,
         nargs="+",
         required=True,
-        help="Path to the image to apply point to polygon to",
+        help="Point coordinates in the format 'x,y'",
     )
     argparser.add_argument(
         "--label-id",
@@ -778,6 +777,7 @@ if __name__ == "__main__":
         default=".",
     )
     args = argparser.parse_args()
+
     if args.action == "ptp":
         if not isinstance(args.expected_area, int) or len(args.points) != len(
             args.annotation_ids
@@ -785,16 +785,16 @@ if __name__ == "__main__":
             raise Exception(
                 "Invalid argument combination. If executing the point to polygon conversion, the `--expected-areas` needs to be set and an expected area for each `--annotation-id` needs to be set (e.g. `--annotation-id 1 2 3 --expected-areas 10 20 15`"
             )
-
+    split_points = [point.split(',') for point in args.points]
     resulting_annotations = []
     image = Image.open(args.image_path)
     image_id = args.image_id
     points = [
         PointAnnotation(
-            int(point[0]), int(point[1]), args.expected_area, args.label_id, annotation_id
+            np.float32(point[0]), np.float32(point[1]), args.expected_area, args.label_id, annotation_id
         )
         for point,  annotation_id in zip(
-            args.points, args.annotation_ids
+            split_points, args.annotation_ids
         )
     ]
 
@@ -816,6 +816,8 @@ if __name__ == "__main__":
         "noneworked": 0,
         "invalid": 0,
     }
+
+
     for annotation in points:
         resulting_annotations += process_image(
             annotation, image, image_id, sam, statistics
