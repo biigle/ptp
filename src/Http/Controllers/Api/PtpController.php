@@ -7,6 +7,7 @@ use Biigle\Modules\Ptp\Jobs\UploadPtpExpectedAreaJob;
 use Biigle\Modules\Ptp\Jobs\UploadConvertedAnnotationsJob;
 use Biigle\Modules\Ptp\PtpExpectedArea;
 use Biigle\ImageAnnotation;
+use Biigle\Shape;
 use Biigle\Volume;
 use Biigle\Label;
 use Illuminate\Http\Request;
@@ -31,7 +32,7 @@ class PtpController extends Controller
         $this->authorize('edit-in', $volume); Label::findOrFail($request->label_id);
         $imageAnnotationArray = [];
         $labelId = $request->label_id;
-        $pointShapeId = 1; //Find annotations with selected label in desired volume
+        $pointShapeId = Shape::pointId(); //Find annotations with selected label in desired volume
         $annotations = ImageAnnotation::join('image_annotation_labels','image_annotations.id', '=', 'image_annotation_labels.annotation_id')
             ->join('images','image_annotations.image_id', '=','images.id')
             ->where('image_annotation_labels.label_id', $labelId)
