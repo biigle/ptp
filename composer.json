@@ -19,4 +19,11 @@
          "Biigle\\Modules\\Ptp\\": "src"
       }
     }
+    "extra": {
+      "laravel": {
+          "providers": [
+              "Biigle\\Modules\\Ptp\\PtpServiceProvider"
+          ]
+      }
+    }
 }
