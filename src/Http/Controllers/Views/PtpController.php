@@ -8,6 +8,7 @@ use Biigle\Volume;
 use Biigle\ImageAnnotation;
 use Biigle\Label;
 use Biigle\LabelTree;
+use Biigle\Shape;
 use Biigle\Modules\Ptp\PtpExpectedArea as PtpPtpExpectedArea;
 use Biigle\Modules\Ptp\PtpExpectedArea;
 use DB;
@@ -60,22 +61,7 @@ class PtpController extends Controller
         //labels the user has access to
         $labels = Label::whereIn('label_tree_id', $labelTrees->pluck('id'))->get();
 
-        // ID of point shape
-        $pointAnnotationId = 1;
-
-        //annotation with labels and that are points
-        $annotations = ImageAnnotation::join('image_annotation_labels','image_annotations.id', '=', 'image_annotation_labels.annotation_id')
-            ->join('images','image_annotations.image_id','=','images.id')
-            ->join('labels', 'image_annotation_labels.label_id','=','labels.id')
-            ->where('images.volume_id', $volume->id)
-            ->whereIn('image_annotation_labels.label_id', $labels->pluck('id'))
-            ->where('image_annotations.shape_id', $pointAnnotationId)
-            ->select('images.uuid', 'image_annotations.id', 'image_annotation_labels.label_id', 'labels.name AS label_name')->get();
-
-        //largo URL patches to show
-        $largoPatchesUrl = Storage::disk(config('largo.patch_storage_disk'))->url(':prefix/:id.'.config('largo.patch_format'));
-
-        return view('ptp::index', compact('volume'), ['annotations' => $annotations, 'labels'=>collect($labels), 'largoPatchesUrl' => $largoPatchesUrl]);
+        return view('ptp::index', compact('volume'), ['labels'=>collect($labels)]);
 
     }
 
