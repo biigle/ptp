@@ -44,11 +44,10 @@ class UploadPtpExpectedAreaJob extends BaseJob implements ShouldQueue
      */
     public int $labelId;
 
-    public function __construct(string $inputDir, int $volumeId, int $labelId)
+    public function __construct(string $inputDir, int $volumeId)
     {
         $this->inputDir = $inputDir;
         $this->volumeId = $volumeId;
-        $this->labelId = $labelId;
     }
     /**
      * Execute the job.
@@ -63,22 +62,14 @@ class UploadPtpExpectedAreaJob extends BaseJob implements ShouldQueue
         } catch (Exception $e){
             throw new Exception("Unable to load files from $this->inputDir: $e");
         }
-        $values = [];
         foreach ($files as $file) {
             if ($file == '.' || $file == '..'){
                 continue;
             }
             $jsonData = $storage->json($file);
-
-            array_push($values, ...$jsonData);
+            $labelId = explode('.', basename($file))[0];
+            PtpExpectedArea::updateOrCreate(['volume_id'=> $this->volumeId, 'label_id' => intval($labelId), 'areas' => $jsonData]);
         }
-
-        $labelId = $this->labelId;
-        $volumeId = $this->volumeId;
-        $values = json_encode($values);
-
-        PtpExpectedArea::updateOrCreate(['volume_id'=> $volumeId, 'label_id' => $labelId, 'areas' => $values]);
-
     }
 }
 

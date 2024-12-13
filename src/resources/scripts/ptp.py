@@ -95,6 +95,9 @@ def inaccurate_annotation_sam(
     Returns:
         List containing coordinates results and SAM object
     """
+    if expected_area is None:
+        return None, None
+
     # we only have one point all the time soe we create one positive label and reuse it
     sam_label = np.array([1])
 
@@ -238,6 +241,8 @@ def negative_point_sam(
          List containing coordinates results and SAM object
     """
     # Let's estimate that a point that is outside the radius of a circle with an area double what we expect is not correct for the annotation
+    if expected_area is None:
+        return None, None
     dist = np.sqrt(expected_area * 2 / np.pi)
     radius = dist + random.randint(5, 10)
 
@@ -373,7 +378,7 @@ def annotation_is_compatible(
         Returns True if contour is not None, if the ratio between contour area and threshold is within the threshold and if the contour area is not too small or big in reference with the expecectation. Returns False otherwise
     """
     if expected_annotation_area is None:
-        # Case for area estimation. We do not filter the new annotations
+        # Case for area estimation. We do not direr the new annotations
         expected_annotation_area = contour_area
     return (
         contour is not None
@@ -492,7 +497,6 @@ def process_annotation(
     img_width: int,
     img_area: int,
     sam: SamPredictor,
-    statistics: dict,
 ) -> Union[dict, None]:
     """
     Process point annotation and try to convert it
@@ -505,7 +509,6 @@ def process_annotation(
         img_width: Width of the original image
         img_area: Area of the original image
         sam: SAM predictor object
-        statistics: Dict containing statistics on which method was used to convert point annotations to polygons
 
     Returns:
         Converted annotation if successful, None otherwise
@@ -516,7 +519,6 @@ def process_annotation(
     ann_point = [annotation.x, annotation.y]
     # check if the annotation point is invalid
     if annotation_is_out_of_bounds(ann_point, img_width, img_height):
-        statistics["invalid"] += 1
         return None
 
     # convert the point annotation to a numpy array
@@ -554,6 +556,7 @@ def process_annotation(
         return {
             "image_id": image_id,
             "label_id": label_id,
+            "annotation_id": annotation.annotation_id,
             "contour_area": contour_area,
             "confidence": 1,
             "points": contour.tolist(),
@@ -570,6 +573,8 @@ def process_annotation(
         return {
             "image_id": image_id,
             "label_id": label_id,
+            "annotation_id": annotation.annotation_id,
+
             "contour_area": contour_area,
             "confidence": 1,
             "points": contour.tolist(),
@@ -584,6 +589,7 @@ def process_annotation(
     ):
         return {
             "image_id": image_id,
+            "annotation_id": annotation.annotation_id,
             "label_id": label_id,
             "confidence": 1,
             "points": contour.tolist(),
@@ -599,6 +605,7 @@ def process_annotation(
         return {
             "image_id": image_id,
             "label_id": label_id,
+            "annotation_id": annotation.annotation_id,
             "confidence": 1,
             "points": contour.tolist(),
             "contour_area": contour_area,
@@ -606,7 +613,6 @@ def process_annotation(
     contour, contour_area, _, _, _, _ = super_zoom_sam(
         ann_point, unsharp_image, sam, annotation.expected_area
     )
-    statistics["negativePoint"] += 1
     # if it still doesn't work...
     if annotation_is_compatible(
         contour, contour_area, 512 * 512, 0.5, annotation.expected_area
@@ -616,10 +622,9 @@ def process_annotation(
             "label_id": label_id,
             "confidence": 1,
             "points": contour.tolist(),
+            "annotation_id": annotation.annotation_id,
             "contour_area": contour_area,
-        }  # ... zoom in even further
-        # ... you're out of luck :-(
-    statistics["noneworked"] += 1
+        }
     return {}
 
 
@@ -671,7 +676,6 @@ def process_image(
     image: Image,
     image_id: int,
     sam: SamPredictor,
-    statistics: dict,
 ) -> list:
     """
     Process input image annotation, and run the underline process to run SAM predictions
@@ -681,7 +685,6 @@ def process_image(
         image: Input image containing the annotation
         image_id: ID of the input image
         sam: SAM predictor object for running the predictions
-        statistics: Dict containing the statistics for which methods were used to generate the new predictions
 
     Returns:
         List containing the new SAM predictions
@@ -707,7 +710,6 @@ def process_image(
             img_width,
             img_area,
             sam,
-            statistics,
         )
     )
     return sam_annotations
@@ -728,19 +730,10 @@ if __name__ == "__main__":
         help="Path to the image to apply point to polygon to",
     )
     argparser.add_argument(
-        "--points",
-        "-p",
+        "--input-file",
         type=str,
-        nargs="+",
         required=True,
-        help="Point coordinates in the format 'x,y'",
-    )
-    argparser.add_argument(
-        "--label-id",
-        "-l",
-        type=int,
-        required=True,
-        help="Label id of the annotations",
+        help="Input file containing the annotations",
     )
     argparser.add_argument(
         "--expected-area",
@@ -752,15 +745,6 @@ if __name__ == "__main__":
         "--image-id", type=int, required=True, help="ID of the image"
     )
     argparser.add_argument(
-        "--annotation-ids",
-        "-a",
-        type=int,
-        nargs="+",
-        required=True,
-        help="Annotation IDs",
-    )
-
-    argparser.add_argument(
         "--device",
         type=str,
         help="Device to use for sam (cpu, cuda, mps)",
@@ -771,32 +755,24 @@ if __name__ == "__main__":
     argparser.add_argument("--model-type", type=str, help="Model type")
     argparser.add_argument("--model-path", type=str, help="Path to model weights")
     argparser.add_argument(
-        "--output-file",
+        "--output-dir",
         type=str,
         help="Where to save the resulting predictions",
         default=".",
     )
     args = argparser.parse_args()
+    annotations = []
+    with open(args.input_file, "r") as inp:
+        annotations = json.load(inp).get(str(args.image_id),[])
 
-    if args.action == "ptp":
-        if not isinstance(args.expected_area, int) or len(args.points) != len(
-            args.annotation_ids
-        ):
-            raise Exception(
-                "Invalid argument combination. If executing the point to polygon conversion, the `--expected-areas` needs to be set and an expected area for each `--annotation-id` needs to be set (e.g. `--annotation-id 1 2 3 --expected-areas 10 20 15`"
-            )
-    split_points = [point.split(',') for point in args.points]
+    if len(annotations) == 0:
+        raise Exception(f"No annotations to load for image {args.image_id}!")
     resulting_annotations = []
     image = Image.open(args.image_path)
-    image_id = args.image_id
     points = [
         PointAnnotation(
-            np.float32(point[0]), np.float32(point[1]), args.expected_area, args.label_id, annotation_id
-        )
-        for point,  annotation_id in zip(
-            split_points, args.annotation_ids
-        )
-    ]
+            annotation["points"][0], annotation["points"][1], annotation["expected_area"], annotation["label"], annotation["annotation_id"])
+        for annotation in annotations]
 
     # get the correct sam model and load weights
     sam_model = sam_model_registry[args.model_type](checkpoint=args.model_path)
@@ -805,31 +781,28 @@ if __name__ == "__main__":
     # create the sam predictor
     sam = SamPredictor(sam_model)
 
-    # init the statistics dict
-    statistics = {
-        "regular": 0,
-        "zoom": 0,
-        "negativePoint": 0,
-        "multiPoint": 0,
-        "inaccurateAnnotation": 0,
-        "superZoom": 0,
-        "noneworked": 0,
-        "invalid": 0,
-    }
-
-
     for annotation in points:
         resulting_annotations += process_image(
-            annotation, image, image_id, sam, statistics
+            annotation, image, args.image_id, sam
         )
     # if the save argument is given save the annotations to the given path
-    os.makedirs(os.path.dirname(args.output_file), exist_ok=True)
-    if args.action == "ptp":
-        with open(args.output_file, "w+") as out_file:
-            json.dump(resulting_annotations, fp=out_file, indent=4)
-    elif  args.action == "compute-area":
-        df = pd.DataFrame(resulting_annotations)
-        df = df.loc[:, "contour_area"].sort_values()
+    labels = set(annotation["label"] for annotation in annotations)
+    os.makedirs(os.path.dirname(args.output_dir), exist_ok=True)
+    for label in labels:
+        output_file = args.output_dir + str(label) + ".json"
+        if args.action == "ptp":
+            if os.path.isfile(output_file):
+                with open(output_file, "r") as existing_annotations:
+                    resulting_annotations += json.load(existing_annotations)
+            with open(output_file, "w+") as out_file:
+                json.dump(resulting_annotations, fp=out_file, indent=4)
+        elif args.action == "compute-area":
+            existing_areas = pd.Series()
+            if os.path.isfile(output_file):
+                existing_areas = pd.read_json(output_file, typ='series')
+            df = pd.DataFrame(resulting_annotations)
+            df = df.loc[:, "contour_area"].sort_values()
+            df = pd.concat([existing_areas, df])
 
-        df.to_json(args.output_file, indent=4)
+            df.to_json(output_file, indent=4, orient='values')
 

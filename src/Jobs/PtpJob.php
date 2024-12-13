@@ -17,7 +17,9 @@ use Storage;
 
 class PtpJob extends BaseJob implements ShouldQueue
 {
+    //TODO: Check which ones are actually useful
     use Batchable, InteractsWithQueue, Queueable, SerializesModels;
+    //TODO: rewrite following PR suggestion
     /**
      * The queue to push this job to.
      *
@@ -123,6 +125,21 @@ class PtpJob extends BaseJob implements ShouldQueue
      *
      * @var string
      */
+    public string $outputDir;
+
+    /**
+     * IDs of the annotations to convert
+     *
+     * @var array
+     */
+    public array $images;
+
+
+    /**
+     * IDs of the annotations to convert
+     *
+     * @var array
+     */
     public string $outputFile;
 
     /**
@@ -130,7 +147,7 @@ class PtpJob extends BaseJob implements ShouldQueue
      *
      * @var array
      */
-    public array $annotationIds;
+    public string $inputFile;
 
     /**
      * Create a new job instance.
@@ -140,27 +157,15 @@ class PtpJob extends BaseJob implements ShouldQueue
      *
      * @return void
      */
-    public function __construct(User $user, array $annotations, string $jobType, int $labelId, string $outputFile)
+    public function __construct(User $user, string $inputFile, string $jobType, string $outputDir)
     {
         $this->queue = config('ptp.job_queue');
-        $this->targetDisk = config('ptp.ptp_storage_disk');
         $this->user = $user;
 
-        //Assumes that annotations are grouped by images
-        $this->imageId = $annotations[0]['image'];
-        $this->outputFile = $outputFile;
+        $this->outputDir = $outputDir;
+        $this->inputFile = $inputFile;
 
-        // We expect these annotations to be point annotations
-        $this->points = [];
-        $this->labelId= $labelId;
-        $this->annotationIds = [];
         $this->jobType = $jobType;
-        foreach ($annotations as $annotation) {
-            $this->points[] = implode(',', $annotation['points']);
-            //TODO: find a better way to pass this arg.
-            $this->annotationIds[] = $annotation['annotation_id'];
-        }
-
     }
 
     /**
@@ -170,28 +175,15 @@ class PtpJob extends BaseJob implements ShouldQueue
      */
     public function handle()
     {
-        $image = Image::findOrFail($this->imageId);
-        $volumeId = $image->volume->id;
-        FileCache::getOnce($image, function ($image, $path) use ($volumeId){
-            $this->python($path, $volumeId);
-        });
-    }
-    /**
-     * Find median of array
-     *
-     * @param  $array
-     * @return integer
-     */
-    protected function findMedian(array $array): int
-    {
-        sort($array);
-        $count = count($array);
-        $index = intdiv($count, 2);
-        if ($count % 2 == 0) {    // count is odd
-            return $array[$index];
-        } else {                   // count is even
-            return ($array[$index-1] + $array[$index]) / 2;
-        }
+        $callback = function ($images, $paths){
+            for ($i = 0; $i < count($images); $i++){
+                $this->python($paths[$i], $images[$i]['volume_id'], $images[$i]['id']);
+            };
+        };
+        $storage = Storage::disk(config('ptp.ptp_storage_disk'));
+        $images = array_map(fn ($imageId): Image => Image::findOrFail($imageId), array_keys($storage->json($this->inputFile)));
+
+        FileCache::batch($images, $callback);
     }
     /**
      * Run the python script for Point to Polygon conversion
@@ -200,37 +192,56 @@ class PtpJob extends BaseJob implements ShouldQueue
      * @param  $volumeId The ID of the volume
      * @param  $log File where the logs from the python script will be found
      */
-    protected function python(string $imagePath, int $volumeId, string $log = 'log.txt')
+    protected function python(string $imagePath, int $imageId, int $volumeId, string $log = 'log.txt')
     {
         $code = 0;
         $lines = [];
         $python = config('ptp.python');
         $script = config('ptp.ptp_script');
         $logFile = config('ptp.temp_dir').'/'.$log;
-        $points = implode(' ',$this->points);
-        $labelId = $this->labelId;
         $device = config('ptp.device');
         $modelPath = config('ptp.model_path');
         $modelType = config('ptp.model_type');
-        $imageId = $this->imageId;
-        $annotationIds = implode(' ', $this->annotationIds);
         $jobType = $this->jobType;
-        $outputFile = $this->outputFile;
-        $command = "{$python} -u {$script} {$jobType} -i {$imagePath} --image-id {$imageId} -p {$points} -l {$labelId}  -a {$annotationIds} --device {$device} --model-type {$modelType} --model-path {$modelPath} --output-file {$outputFile} ";
-        if ($jobType == 'ptp') {
-            $expectedAreaValues = json_decode(PtpExpectedArea::where('label_id', $labelId)->where('volume_id', $volumeId)->first()->areas);
-            $medianArea = $this->findMedian($expectedAreaValues);
-            $command = $command." -e $medianArea";
-        }
-        exec("$command > {$logFile} 2>&1", $lines, $code);
+        $outputDir = $this->outputDir;
 
+
+        $storage = Storage::disk(config('ptp.ptp_storage_disk'));
+        $json = $storage->json($this->inputFile);
+        $tmpInputFile = config('ptp.temp_dir').$this->inputFile;
+        if (!file_exists(dirname($tmpInputFile))) {
+            mkdir(dirname($tmpInputFile), recursive:true);
+        } else {
+            unlink($tmpInputFile);
+        }
+
+        file_put_contents($tmpInputFile, json_encode($json));
+        $tmpOutputDir = config('ptp.temp_dir').'/'.$this->outputDir;
+
+        if (!file_exists($tmpOutputDir)) {
+            mkdir($tmpOutputDir, recursive:true);
+        }
+
+        $files = scandir($tmpOutputDir);
+
+        #Clean output directory
+        $files = $storage->allFiles($this->outputDir);
+        $storage->delete($files);
+
+        $command = "{$python} -u {$script} {$jobType} -i {$imagePath} --image-id {$imageId}  --input-file {$tmpInputFile} --device {$device} --model-type {$modelType} --model-path {$modelPath} --output-dir {$tmpOutputDir} ";
+
+        exec("$command > {$logFile} 2>&1", $lines, $code);
 
         if ($code !== 0) {
             $lines = File::get($logFile);
             throw new Exception("Error while executing python script'{$script}':\n{$lines}", $code);
         }
-
-        $storage = Storage::disk(config('ptp.ptp_storage_disk'));
-        $storage->put($outputFile, file_get_contents($outputFile));
+        $files = scandir($tmpOutputDir);
+        foreach ($files as $file){
+            if ($file == '.' | $file =='..'){
+                continue;
+            }
+            $storage->put($outputDir.$file, file_get_contents($tmpOutputDir.$file));
+        }
     }
 }
