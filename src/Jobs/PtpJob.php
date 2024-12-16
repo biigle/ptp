@@ -175,14 +175,14 @@ class PtpJob extends BaseJob implements ShouldQueue
      */
     public function handle()
     {
+
         $callback = function ($images, $paths){
             for ($i = 0; $i < count($images); $i++){
-                $this->python($paths[$i], $images[$i]['volume_id'], $images[$i]['id']);
+                $this->python($paths[$i],  $images[$i]['id'],$images[$i]['volume_id']);
             };
         };
         $storage = Storage::disk(config('ptp.ptp_storage_disk'));
         $images = array_map(fn ($imageId): Image => Image::findOrFail($imageId), array_keys($storage->json($this->inputFile)));
-
         FileCache::batch($images, $callback);
     }
     /**
