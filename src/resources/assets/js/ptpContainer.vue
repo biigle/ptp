@@ -16,13 +16,11 @@
     </div>
 </template>
 <script>
-import {Messages} from './import';
 import PtpJobApi from './api/ptpJob'
 
 
 export default {
     data(){
-        let annotationsPerLabel = {};
         let imageIndexes = {};
         return {
             imageIndexes: imageIndexes,
