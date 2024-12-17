@@ -2,7 +2,7 @@
     <div class="ptp-container" >
       <div class="row">
         <div class="col-xs-12">
-            <h3>Create a new Point to Polygon job (experimental)</h3>
+            <h4>Create a new Point to Polygon job (experimental)</h4>
             <span> Run the Point to polygon transformation using SAM</span><br>
         </div>
       </div>
