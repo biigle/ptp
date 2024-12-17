@@ -17,34 +17,10 @@ class UploadPtpExpectedAreaJob extends BaseJob implements ShouldQueue
 {
     use Batchable, InteractsWithQueue, Queueable, SerializesModels;
     /**
-     * The queue to push this job to.
-     *
-     * @var string
+     * @var $inputDir Input directory where the JSON files for the computed expected areas will be found
+     * @var $volumeId ID of the volume associated with this area
      */
-    public $queue;
-
-    /**
-     * The queue to push this job to.
-     *
-     * @var string
-     */
-    public string $inputDir;
-
-    /**
-     * ID of the volume associated with this area
-     *
-     * @var string
-     */
-    public int $volumeId;
-
-    /**
-     * ID of the label associated with this area
-     *
-     * @var string
-     */
-    public int $labelId;
-
-    public function __construct(string $inputDir, int $volumeId)
+    public function __construct(public string $inputDir, public int $volumeId)
     {
         $this->inputDir = $inputDir;
         $this->volumeId = $volumeId;

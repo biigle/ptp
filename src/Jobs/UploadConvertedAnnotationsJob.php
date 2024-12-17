@@ -3,6 +3,7 @@ namespace Biigle\Modules\Ptp\Jobs;
 use Biigle\ImageAnnotation;
 use Biigle\ImageAnnotationLabel;
 use Biigle\User;
+use Biigle\Shape;
 use Biigle\Jobs\Job as BaseJob;
 use Exception;
 use Illuminate\Bus\Queueable;
@@ -65,7 +66,7 @@ class UploadConvertedAnnotationsJob extends BaseJob implements ShouldQueue
             if (is_null($jsonData)) {
                 throw new Exception("Error while reading file $file");
             }
-            $polygonShape = 3;
+            $polygonShape = Shape::polygonId();
             foreach ($jsonData as $annotation) {
                 $newAnnotation = ImageAnnotation::findOrFail($annotation['annotation_id'])->replicate();
                 $newAnnotation->points = $annotation['points'];

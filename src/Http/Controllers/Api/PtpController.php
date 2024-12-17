@@ -81,7 +81,7 @@ class PtpController extends Controller
 
         $outputDir = 'compute-area/'.$volume->id.'/';
 
-        $job = new PtpJob($request->user(), $inputFile, 'compute-area', $outputDir);
+        $job = new PtpJob($inputFile, 'compute-area', $outputDir);
         array_push($jobArray, $job);
 
         $uploadJob = new UploadPtpExpectedAreaJob($outputDir, $volume->id);
@@ -89,7 +89,7 @@ class PtpController extends Controller
 
         $outputDir = 'ptp/'.$volume->id.'/';
 
-        $job = new PtpJob($request->user(), $inputFile, 'ptp', $outputDir);
+        $job = new PtpJob($inputFile, 'ptp', $outputDir);
         array_push($jobArray, $job);
 
         $job = new UploadConvertedAnnotationsJob($outputDir, $request->user());

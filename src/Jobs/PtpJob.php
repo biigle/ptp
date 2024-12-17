@@ -1,10 +1,7 @@
 <?php
 namespace Biigle\Modules\Ptp\Jobs;
 use Biigle\Jobs\Job as BaseJob;
-use Biigle\User;
 use Biigle\Image;
-use Biigle\ImageAnnotation;
-use Biigle\Modules\Ptp\PtpExpectedArea;
 use Exception;
 use File;
 use FileCache;
@@ -17,154 +14,19 @@ use Storage;
 
 class PtpJob extends BaseJob implements ShouldQueue
 {
-    //TODO: Check which ones are actually useful
     use Batchable, InteractsWithQueue, Queueable, SerializesModels;
-    //TODO: rewrite following PR suggestion
-    /**
-     * The queue to push this job to.
-     *
-     * @var string
-     */
-    public $queue;
-
-    /**
-     * Number of times to retry this job.
-     *
-     * @var integer
-     */
-    public $tries = 1;
-
-    /**
-     * The job ID.
-     *
-     * @var string
-     */
-    public $id;
-
-    /**
-     * The user who submitted the Largo session.
-     *
-     * @var \Biigle\User
-     */
-    public $user;
-
-    /**
-     * Array of all dismissed image annotation IDs for each label.
-     *
-     * @var array
-     */
-    public $dismissedImageAnnotations;
-
-    /**
-     * Array of all changed image annotation IDs for each label.
-     *
-     * @var array
-     */
-    public $changedImageAnnotations;
-
-    /**
-     * Array of all dismissed video annotation IDs for each label.
-     *
-     * @var array
-     */
-    public $dismissedVideoAnnotations;
-
-    /**
-     * Array of all changed video annotation IDs for each label.
-     *
-     * @var array
-     */
-    public $changedVideoAnnotations;
-
-    /**
-     * Whether to dismiss labels even if they were created by other users.
-     *
-     * @var bool
-     */
-    public $force;
-
-    //TODO: Fix comments below and remove the useless ones above
-
-    /**
-     * ID of the image where PTP is applied
-     *
-     * @var int
-     */
-    public int $imageId ;
-
     /**
      * Type of the Job between compute-area and ptp
      *
-     * @var string
-     */
-    public string $jobType;
-
-
-    /**
-     * Array of annotations
+     * @var $inputFile Input JSON file containing the annotations to convert
+     * @var $jobType Type of job between `ptp` and `compute-area`
+     * @var $outputDir Directory that will contain the resulting conversions or areas
      *
-     * @var array
      */
-    public array $annotations ;
-
-    /**
-     * Array of annotation coordinates (Points)
-     *
-     * @var array
-     */
-    public array $points ;
-
-    /**
-     * ID of the label of the annotation to convert
-     *
-     * @var int
-     */
-    public int $labelId ;
-    /**
-     * Output file where the PTP job output will be stored
-     *
-     * @var string
-     */
-    public string $outputDir;
-
-    /**
-     * IDs of the annotations to convert
-     *
-     * @var array
-     */
-    public array $images;
-
-
-    /**
-     * IDs of the annotations to convert
-     *
-     * @var array
-     */
-    public string $outputFile;
-
-    /**
-     * IDs of the annotations to convert
-     *
-     * @var array
-     */
-    public string $inputFile;
-
-    /**
-     * Create a new job instance.
-     *
-     * @param \Biigle\User $user
-     * @param ImageAnnotation[] $annotations
-     *
-     * @return void
-     */
-    public function __construct(User $user, string $inputFile, string $jobType, string $outputDir)
+    public function __construct(public string $inputFile, public string $jobType, public string $outputDir)
     {
-        $this->queue = config('ptp.job_queue');
-        $this->user = $user;
-
         $this->outputDir = $outputDir;
         $this->inputFile = $inputFile;
-
         $this->jobType = $jobType;
     }
 
