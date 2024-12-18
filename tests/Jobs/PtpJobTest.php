@@ -12,9 +12,9 @@ class PtpJobTest extends TestCase
     {
         $image = Image::factory()->create();
         $contents = [$image->id => []];
-        $inputFile = sys_get_temp_dir().'/test-input/test.json';
+        $inputFile = sys_get_temp_dir().'/test.json';
         file_put_contents($inputFile, json_encode($contents));
-        $outputDir = sys_get_temp_dir().'/test-output/';
+        $outputDir = sys_get_temp_dir();
         $job = new MockPtpJob($inputFile, 'compute-area', $outputDir);
         $job->handle();
         $this->assertTrue($job->pythonCalled);
