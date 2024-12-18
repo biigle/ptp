@@ -1,5 +1,5 @@
 <?php
-namespace Biigle\Tests\Ptp\Modules\Jobs;
+namespace Biigle\Tests\Modules\Ptp\Jobs;
 use Biigle\Image;
 use Biigle\Modules\Ptp\Jobs\PtpJob;
 use TestCase;
