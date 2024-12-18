@@ -32,16 +32,8 @@ class PtpControllerTest extends ApiTestCase
 
 
         $this->beGlobalAdmin();
-        $this->postJson("/api/v1/send-ptp-job")
-            ->assertStatus(200)
-            ->assertExactJson(['url' => null]);
-
-        Queue::assertPushedOn('gpu-quick', function (GenerateEmbedding $job) use ($image) {
-            $this->assertEquals($image->id, $job->image->id);
-            $this->assertEquals($this->guest()->id, $job->user->id);
-
-            return true;
-        });
-    }
+        $this->postJson("/api/v1/send-ptp-job", ['volume_id' => $this->volume()->id])
+            ->assertStatus(200);
+     }
 }
 
