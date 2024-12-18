@@ -3,6 +3,7 @@ namespace Biigle\Tests\Modules\Ptp\Jobs;
 use Biigle\Image;
 use Biigle\Modules\Ptp\Jobs\PtpJob;
 use TestCase;
+use Storage;
 
 //This test should initialize PtpJobTest, and check that the handle() method is called correctly.
 
@@ -14,7 +15,8 @@ class PtpJobTest extends TestCase
         $image = Image::factory()->create();
         $contents = [$image->id => []];
         $inputFile = sys_get_temp_dir().'/test.json';
-        file_put_contents($inputFile, json_encode($contents));
+        $storage = Storage::disk('test');
+        $storage->put($inputFile, json_encode($contents));
         $outputDir = sys_get_temp_dir();
         $job = new MockPtpJob($inputFile, 'compute-area', $outputDir);
         $job->handle();
