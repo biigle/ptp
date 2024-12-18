@@ -40,7 +40,7 @@ class PtpJob extends BaseJob implements ShouldQueue
 
         $callback = function ($images, $paths){
             for ($i = 0; $i < count($images); $i++){
-                $this->python($paths[$i],  $images[$i]['id'],$images[$i]['volume_id']);
+                $this->python($paths[$i],  $images[$i]['id']);
             };
         };
         $storage = Storage::disk(config('ptp.ptp_storage_disk'));
@@ -54,7 +54,7 @@ class PtpJob extends BaseJob implements ShouldQueue
      * @param  $volumeId The ID of the volume
      * @param  $log File where the logs from the python script will be found
      */
-    protected function python(string $imagePath, int $imageId, int $volumeId, string $log = 'log.txt')
+    protected function python(string $imagePath, int $imageId, string $log = 'log.txt')
     {
         $code = 0;
         $lines = [];
