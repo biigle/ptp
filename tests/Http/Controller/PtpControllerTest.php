@@ -7,7 +7,6 @@ use ApiTestCase;
 use Biigle\Image;
 use Biigle\Modules\MagicSam\Jobs\GenerateEmbedding;
 use Illuminate\Support\Facades\Queue;
-use Biigle\MediaType;
 
 
 class PtpControllerTest extends ApiTestCase
