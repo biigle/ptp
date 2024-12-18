@@ -10,6 +10,7 @@ class PtpJobTest extends TestCase
 {
     public function testHandle()
     {
+        config(['ptp.ptp_storage_disk' => 'test']);
         $image = Image::factory()->create();
         $contents = [$image->id => []];
         $inputFile = sys_get_temp_dir().'/test.json';

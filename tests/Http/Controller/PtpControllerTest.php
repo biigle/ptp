@@ -31,7 +31,7 @@ class PtpControllerTest extends ApiTestCase
         $this->postJson("/api/v1/send-ptp-job", ['volume_id' => $v->id])->assertStatus(503);
 
 
-        $this->beSuperUser();
+        $this->beGlobalAdmin();
         $this->postJson("/api/v1/send-ptp-job")
             ->assertStatus(200)
             ->assertExactJson(['url' => null]);
