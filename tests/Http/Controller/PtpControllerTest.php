@@ -27,7 +27,7 @@ class PtpControllerTest extends ApiTestCase
 
 
         $v = VolumeTest::create(['media_type_id' => MediaType::videoId()]);
-        $this->beSuperUser();
+        $this->beGlobalAdmin();
         $this->postJson("/api/v1/send-ptp-job", ['volume_id' => $v->id])->assertStatus(503);
 
 
