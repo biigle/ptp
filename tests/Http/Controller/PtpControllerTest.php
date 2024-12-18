@@ -17,6 +17,8 @@ class PtpControllerTest extends ApiTestCase
         Queue::fake();
         $image = Image::factory()->create(['volume_id' => $this->volume()->id]);
 
+        config(['ptp.ptp_storage_disk' => 'test']);
+
         $this->doTestApiRoute('POST', "/api/v1/send-ptp-job");
 
         $this->beGlobalGuest();
