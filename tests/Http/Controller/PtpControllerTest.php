@@ -19,23 +19,28 @@ class PtpControllerTest extends ApiTestCase
 
         config(['ptp.ptp_storage_disk' => 'test']);
 
-        $this->doTestApiRoute('POST', "/api/v1/send-ptp-job");
+        $this->doTestApiRoute('POST', '/api/v1/send-ptp-job');
 
         $this->beGlobalGuest();
-        $this->postJson("/api/v1/send-ptp-job", ['volume_id' => $this->volume()->id])->assertStatus(403);
+        $this->postJson('/api/v1/send-ptp-job', ['volume_id' => $this->volume()->id])->assertStatus(403);
 
         $this->beUser();
-        $this->postJson("/api/v1/send-ptp-job", ['volume_id' => $this->volume()->id])->assertStatus(403);
+        $this->postJson('/api/v1/send-ptp-job', ['volume_id' => $this->volume()->id])->assertStatus(403);
 
+        $this->beEditor();
+        $this->postJson('/api/v1/send-ptp-job', ['volume_id' => $this->volume()->id])
+            ->assertStatus(200);
 
         $v = VolumeTest::create(['media_type_id' => MediaType::videoId()]);
-        $this->beEditor();
-        $this->postJson("/api/v1/send-ptp-job", ['volume_id' => $v->id])->assertStatus(503);
-
 
         $this->beEditor();
-        $this->postJson("/api/v1/send-ptp-job", ['volume_id' => $this->volume()->id])
-            ->assertStatus(200);
+        $this->postJson('/api/v1/send-ptp-job', ['volume_id' => $v->id])->assertStatus(503);
+
+        $v2 = VolumeTest::create(['media_type_id' => MediaType::imageId()]);
+        $image = Image::factory()->create(['volume_id' => $this->v2->id, 'tiled' => true]);
+
+        $this->beEditor();
+        $this->postJson('/api/v1/send-ptp-job', ['volume_id' => $v->id])->assertStatus(503);
      }
 }
 
