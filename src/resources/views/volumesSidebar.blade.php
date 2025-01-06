@@ -1,4 +1,4 @@
-    <sidebar-tab name="ptp" icon="circle" title="Perform Point to Polygon conversion">
+    <sidebar-tab name="ptp" icon="hat-wizard" title="Perform Point to Polygon conversion">
         <div id="ptp-container"></div>
     </sidebar-tab>
 @push('scripts')
