@@ -37,7 +37,7 @@ class PtpControllerTest extends ApiTestCase
         $this->postJson('/api/v1/send-ptp-job', ['volume_id' => $v->id])->assertStatus(400);
 
         $v2 = VolumeTest::create(['media_type_id' => MediaType::imageId()]);
-        $image = Image::factory()->create(['volume_id' => $this->v2->id, 'tiled' => true]);
+        $image = Image::factory()->create(['volume_id' => $v2->id, 'tiled' => true]);
 
         $this->beEditor();
         $this->postJson('/api/v1/send-ptp-job', ['volume_id' => $v2->id])->assertStatus(400);
