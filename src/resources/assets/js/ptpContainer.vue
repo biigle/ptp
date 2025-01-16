@@ -6,7 +6,7 @@
                 <span> Run the Point to polygon transformation using SAM</span><br>
             </div>
             <div class="form-group">
-                    <button class="btn btn-success btn-block" title="Run Point to Polygon conversion on this volume" @click="sendPtpRequest()">Submit</button>
+              <button class="btn btn-success btn-block" type="button" title="Run Point to Polygon conversion on this volume" @click="sendPtpRequest()">Submit</button>
             </div>
         </form>
     </div>
@@ -17,18 +17,10 @@ import {Messages} from './import'
 
 
 export default {
-    data(){
-        let imageIndexes = {};
+  data(){
         return {
-            imageIndexes: imageIndexes,
             volumeId: biigle.$require('volumes.volumeId'),
             selectedLabel: null,
-        }
-    },
-  props: {
-      volume: {
-          type: Number,
-          required: true,
         }
   },
    methods: {
