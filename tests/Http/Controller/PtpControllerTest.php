@@ -34,17 +34,17 @@ class PtpControllerTest extends ApiTestCase
 
     public function testVideoVolumes()
     {
-        $this->volume->media_type_id = MediaType::videoId();
+        $this->volume()->media_type_id = MediaType::videoId();
 
         $this->beEditor();
-        $this->postJson('/api/v1/send-ptp-job', ['volume_id' => $volume->id])->assertStatus(400);
+        $this->postJson('/api/v1/send-ptp-job', ['volume_id' => $this->volume()->id])->assertStatus(400);
     }
 
     public function testTiledImages()
     {
-        $image = Image::factory()->create(['volume_id' => $this->volume->id, 'tiled' => true]);
+        $image = Image::factory()->create(['volume_id' => $this->volume()->id, 'tiled' => true]);
         $this->beEditor();
-        $this->postJson('/api/v1/send-ptp-job', ['volume_id' => $this->volume->id])->assertStatus(400);
+        $this->postJson('/api/v1/send-ptp-job', ['volume_id' => $this->volume()->id])->assertStatus(400);
 
     }
 }
