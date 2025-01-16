@@ -7,9 +7,4 @@ $router->group([
 ], function ($router) {
     $router->post('send-ptp-job', 'PtpController@generatePtpJob');
 });
-$router->group([
-    'middleware' => 'auth',
-    'namespace' => 'Views',
-], function ($router) {
-    $router->get('ptp/{id}', ['as' => 'volumes-ptp-conversion', 'uses' => 'PtpController@index']);
-});
+
