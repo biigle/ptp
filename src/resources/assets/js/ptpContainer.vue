@@ -1,18 +1,14 @@
 <template>
-    <div class="ptp-container" >
-      <div class="row">
-        <div class="col-xs-12">
-            <h4>Create a new Point to Polygon job (experimental)</h4>
-            <span> Run the Point to polygon transformation using SAM</span><br>
-        </div>
-      </div>
-      <div class="row container-button-ptp">
-           <div class="col-xs-6">
-                <a class="" target="_blank" title="Run Point to Polygon Conversion">
-                    <i class="fa fa-draw-polygon big-button" aria-hidden="true" @click="sendPtpRequest()"></i>
-                </a>
+    <div class="ptp-container">
+        <form class="form-stacked">
+            <div class="form-group">
+                <h4>Create a new Point to Polygon job (experimental)</h4>
+                <span> Run the Point to polygon transformation using SAM</span><br>
             </div>
-        </div>
+            <div class="form-group">
+                    <button class="btn btn-success btn-block" title="Run Point to Polygon conversion on this volume" @click="sendPtpRequest()">Submit</button>
+            </div>
+        </form>
     </div>
 </template>
 <script>
