@@ -92,7 +92,7 @@ class PtpJob extends BaseJob implements ShouldQueue
 
         $command = "{$python} -u {$script} {$jobType} -i {$imagePath} --image-id {$imageId}  --input-file {$tmpInputFile} --device {$device} --model-type {$modelType} --model-path {$modelPath} --output-dir {$tmpOutputDir} ";
 
-        exec("$command > {$logFile} 2>&1", $lines, $code);
+        exec("$command 2>&1", $lines, $code);
 
         if ($code !== 0) {
             $lines = File::get($logFile);
