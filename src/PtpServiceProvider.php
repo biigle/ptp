@@ -36,7 +36,6 @@ class PtpServiceProvider extends ServiceProvider
         $modules->register('ptp', [
             'viewMixins' => [
                 'volumesSidebar',
-                'ptpContainer',
             ],
             'apidoc' => [__DIR__.'/Http/Controllers/Ptp/'],
         ]);
