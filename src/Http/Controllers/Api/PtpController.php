@@ -28,13 +28,14 @@ class PtpController extends Controller
      * @return
      */
     public function generatePtpJob(Request $request) {
+
         $this->validate($request, ['volume_id' => 'integer']);
         $volume = Volume::findOrFail($request->volume_id);
+        $this->authorize('edit-in', $volume);
         if (!$volume->isImageVolume() || $volume->hasTiledImages()){
             abort(400);
         }
 
-        $this->authorize('edit-in', $volume);
 
         $imageAnnotationArray = [];
 
