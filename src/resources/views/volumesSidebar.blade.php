@@ -7,7 +7,5 @@
 
 @push("styles")
 <link href="{{ cachebust_asset('vendor/ptp/styles/main.css') }}" rel="stylesheet">
-<link href="{{ cachebust_asset('vendor/largo/styles/main.css') }}" rel="stylesheet">
-
 @endpush
 
