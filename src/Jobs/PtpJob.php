@@ -23,11 +23,10 @@ class PtpJob extends BaseJob implements ShouldQueue
      * @var $outputDir Directory that will contain the resulting conversions or areas
      *
      */
-    public function __construct(public string $inputFile, public string $jobType, public string $outputDir)
+    public function __construct(public string $inputFile, public string $outputDir)
     {
         $this->outputDir = $outputDir;
         $this->inputFile = $inputFile;
-        $this->jobType = $jobType;
     }
 
     /**
@@ -39,14 +38,12 @@ class PtpJob extends BaseJob implements ShouldQueue
     {
 
         $callback = function ($images, $paths){
-            for ($i = 0; $i < count($images); $i++){
-                $this->python($paths[$i],  $images[$i]['id']);
-            };
+            $this->python($paths,  $images);
         };
         $storage = Storage::disk(config('ptp.ptp_storage_disk'));
-        $images = array_map(fn ($imageId): Image => Image::findOrFail($imageId), array_keys($storage->json($this->inputFile)));
-        FileCache::batch($images, $callback);
-    }
+        $imageIds = array_keys($storage->json($this->inputFile.'.json'));
+        $images = Image::whereIn('id', $imageIds)->get()->all();
+        FileCache::batch($images, $callback); }
     /**
      * Run the python script for Point to Polygon conversion
      *
@@ -54,22 +51,20 @@ class PtpJob extends BaseJob implements ShouldQueue
      * @param  $volumeId The ID of the volume
      * @param  $log File where the logs from the python script will be found
      */
-    protected function python(string $imagePath, int $imageId, string $log = 'log.txt')
+    protected function python(array $paths, array $images)
     {
         $code = 0;
         $lines = [];
         $python = config('ptp.python');
         $script = config('ptp.ptp_script');
-        $logFile = config('ptp.temp_dir').'/'.$log;
         $device = config('ptp.device');
         $modelPath = config('ptp.model_path');
         $modelType = config('ptp.model_type');
-        $jobType = $this->jobType;
-        $outputDir = $this->outputDir;
-
 
         $storage = Storage::disk(config('ptp.ptp_storage_disk'));
-        $json = $storage->json($this->inputFile);
+        $json = $storage->json($this->inputFile.'.json');
+
+        //Create input file with annotations
         $tmpInputFile = config('ptp.temp_dir').$this->inputFile;
         if (!file_exists(dirname($tmpInputFile))) {
             mkdir(dirname($tmpInputFile), recursive:true);
@@ -77,8 +72,18 @@ class PtpJob extends BaseJob implements ShouldQueue
             unlink($tmpInputFile);
         }
 
-        file_put_contents($tmpInputFile, json_encode($json));
-        $tmpOutputDir = config('ptp.temp_dir').'/'.$this->outputDir;
+        file_put_contents($tmpInputFile.'.json', json_encode($json));
+
+        $imagePathInput = [];
+
+        //Create input file with images
+        for ($i = 0, $size = count($paths); $i < $size; $i++){
+            $imagePathInput[$images[$i]->id] = $paths[$i];
+        }
+
+        file_put_contents($tmpInputFile.'_images.json', json_encode($imagePathInput));
+
+        $tmpOutputFile = config('ptp.temp_dir').'/'.$this->outputDir.'.json';
 
         if (!file_exists($tmpOutputDir)) {
             mkdir($tmpOutputDir, recursive:true);
@@ -90,20 +95,15 @@ class PtpJob extends BaseJob implements ShouldQueue
         $files = $storage->allFiles($this->outputDir);
         $storage->delete($files);
 
-        $command = "{$python} -u {$script} {$jobType} -i {$imagePath} --image-id {$imageId}  --input-file {$tmpInputFile} --device {$device} --model-type {$modelType} --model-path {$modelPath} --output-dir {$tmpOutputDir} ";
+        $command = "{$python} -u {$script} --image-paths-file {$tmpInputFile}_images.json --input-file {$tmpInputFile}.json --device {$device} --model-type {$modelType} --model-path {$modelPath} --output-file {$tmpOutputFile} ";
 
         exec("$command 2>&1", $lines, $code);
 
         if ($code !== 0) {
-            $lines = File::get($logFile);
-            throw new Exception("Error while executing python script'{$script}':\n{$lines}", $code);
+            $lines = implode("\n", $lines);
+            throw new Exception("Error while executing python script '{$script}':\n{$lines}", $code);
         }
-        $files = scandir($tmpOutputDir);
-        foreach ($files as $file){
-            if ($file == '.' | $file =='..'){
-                continue;
-            }
-            $storage->put($outputDir.$file, file_get_contents($tmpOutputDir.$file));
-        }
+
+        //TODO: upload conversions here
     }
 }

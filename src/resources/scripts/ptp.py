@@ -13,15 +13,8 @@ import numpy as np
 from PIL import Image
 from segment_anything import SamPredictor, sam_model_registry
 
-try:
-    from dotenv import load_dotenv
-
-    load_dotenv()
-except ImportError:
-    pass
-
 PointAnnotation = namedtuple(
-    "Annotation", ["x", "y", "expected_area", "label", "annotation_id"]
+    "Annotation", ["x", "y", "label", "annotation_id", "expected_area"], defaults={"expected_area" : None}
 )
 
 
@@ -469,20 +462,21 @@ def mask_to_contour(
     mask = mask * 255
     mask = mask.astype(np.uint8)
     contours, hierarchy = cv2.findContours(
-        mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
+        mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
     )
 
     # if no contour could be found return None
     if not len(contours):
         return [None, None]
+
     # if there is only one contour...
     elif len(contours) == 1:
         # ... return it
         contour = contours[0]
+
     # else we have to find the one above the object (since we used RETR_EXTERNAL there can be only one)
     else:
         contour = get_point_contour(contours, point)
-        # contourThatContainsThePoint might return None if no contour contains the point
         if contour is None:
             return [None, None]
     return [contour.flatten(), cv2.contourArea(contour)]
@@ -718,12 +712,7 @@ def process_image(
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
     argparser.add_argument(
-        "action",
-        choices=["compute-area", "ptp"],
-        help="Which action to execute; `compute-area` if computing the average area of the prediction, `ptp` to execute the point to polygon conversion",
-    )
-    argparser.add_argument(
-        "--image-path",
+        "--image-paths-file",
         "-i",
         type=str,
         required=True,
@@ -736,15 +725,6 @@ if __name__ == "__main__":
         help="Input file containing the annotations",
     )
     argparser.add_argument(
-        "--expected-area",
-        "-e",
-        type=int,
-        help="Expected area of the new annotation polygon",
-    )
-    argparser.add_argument(
-        "--image-id", type=int, required=True, help="ID of the image"
-    )
-    argparser.add_argument(
         "--device",
         type=str,
         help="Device to use for sam (cpu, cuda, mps)",
@@ -755,24 +735,19 @@ if __name__ == "__main__":
     argparser.add_argument("--model-type", type=str, help="Model type")
     argparser.add_argument("--model-path", type=str, help="Path to model weights")
     argparser.add_argument(
-        "--output-dir",
+        "--output-file",
         type=str,
         help="Where to save the resulting predictions",
         default=".",
     )
     args = argparser.parse_args()
     annotations = []
+    input_values = {}
     with open(args.input_file, "r") as inp:
-        annotations = json.load(inp).get(str(args.image_id),[])
+        input_values = json.load(inp)
 
-    if len(annotations) == 0:
-        raise Exception(f"No annotations to load for image {args.image_id}!")
-    resulting_annotations = []
-    image = Image.open(args.image_path)
-    points = [
-        PointAnnotation(
-            annotation["points"][0], annotation["points"][1], annotation["expected_area"], annotation["label"], annotation["annotation_id"])
-        for annotation in annotations]
+    with open(args.image_paths_file, "r") as inp:
+        image_paths = json.load(inp)
 
     # get the correct sam model and load weights
     sam_model = sam_model_registry[args.model_type](checkpoint=args.model_path)
@@ -781,28 +756,57 @@ if __name__ == "__main__":
     # create the sam predictor
     sam = SamPredictor(sam_model)
 
-    for annotation in points:
-        resulting_annotations += process_image(
-            annotation, image, args.image_id, sam
-        )
-    # if the save argument is given save the annotations to the given path
-    labels = set(annotation["label"] for annotation in annotations)
-    os.makedirs(os.path.dirname(args.output_dir), exist_ok=True)
-    for label in labels:
-        output_file = args.output_dir + str(label) + ".json"
-        if args.action == "ptp":
-            if os.path.isfile(output_file):
-                with open(output_file, "r") as existing_annotations:
-                    resulting_annotations += json.load(existing_annotations)
-            with open(output_file, "w+") as out_file:
-                json.dump(resulting_annotations, fp=out_file, indent=4)
-        elif args.action == "compute-area":
-            existing_areas = pd.Series()
-            if os.path.isfile(output_file):
-                existing_areas = pd.read_json(output_file, typ='series')
-            df = pd.DataFrame(resulting_annotations)
-            df = df.loc[:, "contour_area"].sort_values()
-            df = pd.concat([existing_areas, df])
+    #Compute expected areasa
+    for image_id, annotations in input_values.items():
+        if len(annotations) == 0:
+            logging.error(f"No annotations to load for image with id {image_id}!")
+            continue
+        resulting_annotations = []
+        image_path = image_paths.get(image_id)
+        if image_path is None:
+            logging.error(f"Image path for {image_id} not found!")
+            continue
+        image = Image.open(image_path)
+        points = [
+            PointAnnotation(
+                annotation["points"][0], annotation["points"][1], annotation["label"], annotation["annotation_id"], None)
+            for annotation in annotations]
 
-            df.to_json(output_file, indent=4, orient='values')
+        for annotation in points:
+            resulting_annotations += process_image(
+                annotation, image, image_id, sam
+            )
+
+    # if the save argument is given save the annotations to the given path
+    expected_areas = pd.DataFrame(resulting_annotations)
+    expected_areas = expected_areas.groupby("label_id").apply(lambda x: x.contour_area.median()).to_dict()
+
+    #now that we have the expected areas, we can convert annotations
+    resulting_annotations = []
+
+    for image_id, annotations in input_values.items():
+        if len(annotations) == 0:
+            logging.error(f"No annotations to load for image with id {image_id}!")
+            continue
+        resulting_annotations = []
+        image_path = image_paths.get(image_id)
+        if image_path is None:
+            logging.error(f"Image path for {image_id} not found!")
+            continue
+        image = Image.open(image_path)
+        points = [
+            PointAnnotation(
+                annotation["points"][0], annotation["points"][1], annotation["label"], annotation["annotation_id"], expected_areas.get(annotation["label"])
+            )
+            for annotation in annotations
+        ]
+
+        for annotation in points:
+            resulting_annotations += process_image(
+                annotation, image, image_id, sam
+            )
+        # if the save argument is given save the annotations to the given path
+    os.makedirs(os.path.dirname(args.output_dir), exist_ok=True)
+    pd.DataFrame(resulting_annotations).loc[:,["image_id","label_id","annotation_id","confidence"]].to_json(args.output_file)
+
 

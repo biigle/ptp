@@ -47,15 +47,10 @@ class PtpController extends Controller
             ->select('image_annotations.id as id', 'images.id as image_id', 'image_annotations.points as points','image_annotations.shape_id as shape_id', 'image_annotation_labels.label_id as label_id')
             ->get();
 
-        $expectedAreas = PtpExpectedArea::query()->where('volume_id', $volume->id)->get()->keyBy('label_id');
 
         foreach ($annotations as $annotation) {
             if (!isset($imageAnnotationArray[$annotation->image_id])) {
                 $imageAnnotationArray[$annotation->image_id] = [];
-            }
-            $expectedArea = null;
-            if (in_array($annotation->label_id, $expectedAreas->toArray())){
-                $expectedArea = $this->findMedian(json_decode($expectedAreas[$annotation->label_id]->areas));
             }
             $imageAnnotationArray[$annotation->image_id][] = [
                 'annotation_id' => $annotation->id,
@@ -63,7 +58,6 @@ class PtpController extends Controller
                 'shape' => $annotation->shape_id,
                 'image' => $annotation->image_id,
                 'label' => $annotation->label_id,
-                'expected_area' => $expectedArea,
             ];
         };
 
@@ -72,50 +66,17 @@ class PtpController extends Controller
             mkdir($inputDir, 0755, true);
         }
 
-        $inputFile = '/input-files-ptp/'.$volume->id.'.json';
+        //$inputFile.'.json' will be used for image annotations, $inputFile.'_images.json' for image paths
+        $inputFile = '/input-files-ptp/'.$volume->id;
         $jsonData = json_encode($imageAnnotationArray);
         $storage = Storage::disk(config('ptp.ptp_storage_disk'));
-        $storage->put($inputFile, $jsonData);
-
-        // INFO: should we batch per small number or annotations? for now, just grouping per
-        // image IDs
-        $jobArray = [];
-
-        $outputDir = 'compute-area/'.$volume->id.'/';
-
-        $job = new PtpJob($inputFile, 'compute-area', $outputDir);
-        array_push($jobArray, $job);
-
-        $uploadJob = new UploadPtpExpectedAreaJob($outputDir, $volume->id);
-        array_push($jobArray, $uploadJob);
+        $storage->put($inputFile.'.json', $jsonData);
 
         $outputDir = 'ptp/'.$volume->id.'/';
 
-        $job = new PtpJob($inputFile, 'ptp', $outputDir);
-        array_push($jobArray, $job);
-
-        $job = new UploadConvertedAnnotationsJob($outputDir, $request->user());
-        array_push($jobArray, $job);
-
-        Bus::chain($jobArray)->dispatch();
+        PtpJob::dispatch($inputFile, $outputDir);
 
         return ['submitted' => true];
     }
-    /**
-     * Find median of array
-     *
-     * @param  $array
-     * @return integer
-     */
-    protected function findMedian(array $array): int
-    {
-        sort($array);
-        $count = count($array);
-        $index = intdiv($count, 2);
-        if ($count % 2 == 0) {    // count is odd
-            return $array[$index];
-        } else {                   // count is even
-            return ($array[$index-1] + $array[$index]) / 2;
-        }
-    }
 }
+
