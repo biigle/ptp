@@ -806,7 +806,7 @@ if __name__ == "__main__":
                 annotation, image, image_id, sam
             )
         # if the save argument is given save the annotations to the given path
-    os.makedirs(os.path.dirname(args.output_dir), exist_ok=True)
-    pd.DataFrame(resulting_annotations).loc[:,["image_id","label_id","annotation_id","confidence"]].to_json(args.output_file)
+    os.makedirs(os.path.dirname(args.output_file), exist_ok=True)
+    pd.DataFrame(resulting_annotations).loc[:,["image_id","label_id","annotation_id","confidence", "points"]].to_json(args.output_file, orient="records")
 
 

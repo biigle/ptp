@@ -67,14 +67,14 @@ class PtpController extends Controller
         }
 
         //$inputFile.'.json' will be used for image annotations, $inputFile.'_images.json' for image paths
-        $inputFile = '/input-files-ptp/'.$volume->id;
+        $inputFile = 'ptp/input-files/'.$volume->id;
         $jsonData = json_encode($imageAnnotationArray);
         $storage = Storage::disk(config('ptp.ptp_storage_disk'));
-        $storage->put($inputFile.'.json', $jsonData);
+        $storage->put(config('ptp.temp_dir').'/'.$inputFile.'.json', $jsonData);
 
-        $outputDir = 'ptp/'.$volume->id.'/';
+        $outputFile = 'ptp/'.$volume->id.'_converted_annotations.json';
 
-        PtpJob::dispatch($inputFile, $outputDir);
+        PtpJob::dispatch($inputFile, $outputFile, $request->user());
 
         return ['submitted' => true];
     }

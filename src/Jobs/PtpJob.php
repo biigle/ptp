@@ -2,8 +2,11 @@
 namespace Biigle\Modules\Ptp\Jobs;
 use Biigle\Jobs\Job as BaseJob;
 use Biigle\Image;
+use Biigle\ImageAnnotation;
+use Biigle\ImageAnnotationLabel;
+use Biigle\Shape;
+use Biigle\User;
 use Exception;
-use File;
 use FileCache;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -18,15 +21,16 @@ class PtpJob extends BaseJob implements ShouldQueue
     /**
      * Type of the Job between compute-area and ptp
      *
+     * @var $outputFile File that will contain the resulting conversions
      * @var $inputFile Input JSON file containing the annotations to convert
-     * @var $jobType Type of job between `ptp` and `compute-area`
-     * @var $outputDir Directory that will contain the resulting conversions or areas
+     * @var $user User starting the PtpJob
      *
      */
-    public function __construct(public string $inputFile, public string $outputDir)
+    public function __construct(public string $inputFile, public string $outputFile, public User $user)
     {
-        $this->outputDir = $outputDir;
-        $this->inputFile = $inputFile;
+        $this->outputFile = config('ptp.temp_dir').'/'.$outputFile;
+        $this->inputFile = config('ptp.temp_dir').'/'.$inputFile;
+        $this->user = $user;
     }
 
     /**
@@ -43,15 +47,16 @@ class PtpJob extends BaseJob implements ShouldQueue
         $storage = Storage::disk(config('ptp.ptp_storage_disk'));
         $imageIds = array_keys($storage->json($this->inputFile.'.json'));
         $images = Image::whereIn('id', $imageIds)->get()->all();
-        FileCache::batch($images, $callback); }
+        FileCache::batch($images, $callback);
+        $this->uploadConvertedAnnotations();
+    }
     /**
      * Run the python script for Point to Polygon conversion
      *
-     * @param  $imagePath The path the image is found
-     * @param  $volumeId The ID of the volume
-     * @param  $log File where the logs from the python script will be found
+     * @param  $paths The paths where the images is found
+     * @param  $images Array of images
      */
-    protected function python(array $paths, array $images)
+    protected function python(array $paths, array $images): void
     {
         $code = 0;
         $lines = [];
@@ -65,11 +70,12 @@ class PtpJob extends BaseJob implements ShouldQueue
         $json = $storage->json($this->inputFile.'.json');
 
         //Create input file with annotations
-        $tmpInputFile = config('ptp.temp_dir').$this->inputFile;
-        if (!file_exists(dirname($tmpInputFile))) {
-            mkdir(dirname($tmpInputFile), recursive:true);
-        } else {
-            unlink($tmpInputFile);
+        $tmpInputFile = $this->inputFile;
+
+        if (file_exists($tmpInputFile.'.json')) {
+            unlink($tmpInputFile.'.json');
+        } else if (!file_exists(dirname($tmpInputFile.'.json'))){
+            mkdir(dirname($tmpInputFile.'.json'), recursive:true);
         }
 
         file_put_contents($tmpInputFile.'.json', json_encode($json));
@@ -83,19 +89,13 @@ class PtpJob extends BaseJob implements ShouldQueue
 
         file_put_contents($tmpInputFile.'_images.json', json_encode($imagePathInput));
 
-        $tmpOutputFile = config('ptp.temp_dir').'/'.$this->outputDir.'.json';
-
-        if (!file_exists($tmpOutputDir)) {
-            mkdir($tmpOutputDir, recursive:true);
+        if (!file_exists(dirname($this->outputFile))) {
+            mkdir(dirname($this->outputFile), recursive:true);
+        } else if (file_exists($this->outputFile)){
+            unlink($this->outputFile);
         }
 
-        $files = scandir($tmpOutputDir);
-
-        #Clean output directory
-        $files = $storage->allFiles($this->outputDir);
-        $storage->delete($files);
-
-        $command = "{$python} -u {$script} --image-paths-file {$tmpInputFile}_images.json --input-file {$tmpInputFile}.json --device {$device} --model-type {$modelType} --model-path {$modelPath} --output-file {$tmpOutputFile} ";
+        $command = "{$python} -u {$script} --image-paths-file {$tmpInputFile}_images.json --input-file {$tmpInputFile}.json --device {$device} --model-type {$modelType} --model-path {$modelPath} --output-file {$this->outputFile} ";
 
         exec("$command 2>&1", $lines, $code);
 
@@ -103,7 +103,27 @@ class PtpJob extends BaseJob implements ShouldQueue
             $lines = implode("\n", $lines);
             throw new Exception("Error while executing python script '{$script}':\n{$lines}", $code);
         }
+    }
 
-        //TODO: upload conversions here
+    public function uploadConvertedAnnotations(): void
+    {
+        $jsonData = json_decode(file_get_contents($this->outputFile), true);
+        if (is_null($jsonData)) {
+            throw new Exception("Error while reading file $this->outputFile");
+        }
+        $polygonShape = Shape::polygonId();
+        foreach ($jsonData as $annotation) {
+            $newAnnotation = ImageAnnotation::findOrFail($annotation['annotation_id'])->replicate();
+            $newAnnotation->points = $annotation['points'];
+            $newAnnotation->shape_id = $polygonShape;
+            $newAnnotation->save();
+            $imageAnnotationLabel = [
+                'label_id' => $annotation['label_id'],
+                'annotation_id' => $newAnnotation->id,
+                'user_id' => $this->user->id,
+                'confidence' => 1.0,
+            ];
+            ImageAnnotationLabel::insert($imageAnnotationLabel) ;
+        }
     }
 }
