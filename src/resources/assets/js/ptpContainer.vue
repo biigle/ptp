@@ -28,7 +28,7 @@ export default {
             PtpJobApi.sendPtpJob({volume_id: this.volumeId}).catch(
                 (error) => {
                     if (error.status == 400){
-                        Messages.danger('The selected volume cannot be processed; it contains either videos or tiled images.')
+                        Messages.danger(error.body['message'])
                     }
                 }
             );

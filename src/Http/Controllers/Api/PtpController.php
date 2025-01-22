@@ -12,8 +12,8 @@ use Biigle\Volume;
 use Biigle\Label;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Bus;
+use Ramsey\Uuid\Uuid;
 use Storage;
-
 /**
  * Controller used for creating a PTP Job Chain
  */
@@ -32,10 +32,14 @@ class PtpController extends Controller
         $this->validate($request, ['volume_id' => 'integer']);
         $volume = Volume::findOrFail($request->volume_id);
         $this->authorize('edit-in', $volume);
+
         if (!$volume->isImageVolume() || $volume->hasTiledImages()){
-            abort(400);
+            abort(400, 'Point to polygon conversion cannot be executed on this volume!');
         }
 
+        if (is_array($volume->attrs) && array_key_exists('ptp_job_id', $volume->attrs)) {
+            abort(400, 'Another Point to polygon conversion job is running in this volume!');
+        }
 
         $imageAnnotationArray = [];
 
@@ -74,9 +78,23 @@ class PtpController extends Controller
 
         $outputFile = 'ptp/'.$volume->id.'_converted_annotations.json';
 
-        PtpJob::dispatch($inputFile, $outputFile, $request->user());
+        $this->setUniquePtpJob($volume);
+
+        PtpJob::dispatch($inputFile, $outputFile, $request->user(), $volume->id);
 
         return ['submitted' => true];
+    }
+
+    public function setUniquePtpJob($volume): void
+    {
+        $attrs = $volume->attrs;
+        if (isset($attrs['ptp_job_id'])){
+
+        }
+        $uuid = Uuid::uuid4();
+        $attrs['ptp_job_id'] = $uuid;
+        $volume->attrs = $attrs;
+        $volume->save();
     }
 }
 

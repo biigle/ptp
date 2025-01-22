@@ -6,6 +6,7 @@ use Biigle\ImageAnnotation;
 use Biigle\ImageAnnotationLabel;
 use Biigle\Shape;
 use Biigle\User;
+use Biigle\Volume;
 use Exception;
 use FileCache;
 use Illuminate\Bus\Queueable;
@@ -14,6 +15,7 @@ use Illuminate\Bus\Batchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Storage;
+use Throwable;
 
 class PtpJob extends BaseJob implements ShouldQueue
 {
@@ -24,13 +26,15 @@ class PtpJob extends BaseJob implements ShouldQueue
      * @var $outputFile File that will contain the resulting conversions
      * @var $inputFile Input JSON file containing the annotations to convert
      * @var $user User starting the PtpJob
+     * @var $volume Volume where the Job is executed
      *
      */
-    public function __construct(public string $inputFile, public string $outputFile, public User $user)
+    public function __construct(public string $inputFile, public string $outputFile, public User $user, public int $volumeId)
     {
         $this->outputFile = config('ptp.temp_dir').'/'.$outputFile;
         $this->inputFile = config('ptp.temp_dir').'/'.$inputFile;
         $this->user = $user;
+        $this->volumeId = $volumeId;
     }
 
     /**
@@ -49,6 +53,7 @@ class PtpJob extends BaseJob implements ShouldQueue
         $images = Image::whereIn('id', $imageIds)->get()->all();
         FileCache::batch($images, $callback);
         $this->uploadConvertedAnnotations();
+        $this->cleanupJob();
     }
     /**
      * Run the python script for Point to Polygon conversion
@@ -103,6 +108,7 @@ class PtpJob extends BaseJob implements ShouldQueue
             $lines = implode("\n", $lines);
             throw new Exception("Error while executing python script '{$script}':\n{$lines}", $code);
         }
+
     }
 
     public function uploadConvertedAnnotations(): void
@@ -125,5 +131,23 @@ class PtpJob extends BaseJob implements ShouldQueue
             ];
             ImageAnnotationLabel::insert($imageAnnotationLabel) ;
         }
+    }
+
+    public function cleanupJob()
+    {
+        Volume::where('attrs->largo_job_id', $this->volumeId)->each(function ($volume) {
+            $attrs = $volume->attrs;
+            unset($attrs['largo_job_id']);
+            $volume->attrs = $attrs;
+            $volume->save();
+        });
+
+    }
+
+    public function failed(?Throwable $exception): void
+    {
+        $this->cleanupJob();
+        parent::failed($exception);
+
     }
 }
