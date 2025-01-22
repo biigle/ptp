@@ -26,15 +26,15 @@ class PtpJob extends BaseJob implements ShouldQueue
      * @var $outputFile File that will contain the resulting conversions
      * @var $inputFile Input JSON file containing the annotations to convert
      * @var $user User starting the PtpJob
-     * @var $volume Volume where the Job is executed
+     * @var $id Uuid associated to the job
      *
      */
-    public function __construct(public string $inputFile, public string $outputFile, public User $user, public int $volumeId)
+    public function __construct(public string $inputFile, public string $outputFile, public User $user, public string $id)
     {
         $this->outputFile = config('ptp.temp_dir').'/'.$outputFile;
         $this->inputFile = config('ptp.temp_dir').'/'.$inputFile;
         $this->user = $user;
-        $this->volumeId = $volumeId;
+        $this->id = $id;
     }
 
     /**
@@ -135,9 +135,9 @@ class PtpJob extends BaseJob implements ShouldQueue
 
     public function cleanupJob()
     {
-        Volume::where('attrs->largo_job_id', $this->volumeId)->each(function ($volume) {
+        Volume::where('attrs->ptp_job_id', $this->id)->each(function ($volume) {
             $attrs = $volume->attrs;
-            unset($attrs['largo_job_id']);
+            unset($attrs['ptp_job_id']);
             $volume->attrs = $attrs;
             $volume->save();
         });

@@ -78,23 +78,27 @@ class PtpController extends Controller
 
         $outputFile = 'ptp/'.$volume->id.'_converted_annotations.json';
 
-        $this->setUniquePtpJob($volume);
+        $id = $this->setUniquePtpJob($volume);
 
-        PtpJob::dispatch($inputFile, $outputFile, $request->user(), $volume->id);
+        PtpJob::dispatch($inputFile, $outputFile, $request->user(), $id);
 
         return ['submitted' => true];
     }
 
-    public function setUniquePtpJob($volume): void
+    /**
+    *
+    * Assign UUID to a volume for the PTP job so that only one job is run per volume at a time.
+    * @var Volume $volume Volume where the PTP job is executed
+    *
+    **/
+    public function setUniquePtpJob(Volume $volume): string
     {
         $attrs = $volume->attrs;
-        if (isset($attrs['ptp_job_id'])){
-
-        }
         $uuid = Uuid::uuid4();
         $attrs['ptp_job_id'] = $uuid;
         $volume->attrs = $attrs;
         $volume->save();
+        return $uuid;
     }
 }
 
