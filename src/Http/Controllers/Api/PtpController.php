@@ -3,15 +3,10 @@
 namespace Biigle\Modules\Ptp\Http\Controllers\Api;
 use Biigle\Http\Controllers\Api\Controller;
 use Biigle\Modules\Ptp\Jobs\PtpJob;
-use Biigle\Modules\Ptp\Jobs\UploadPtpExpectedAreaJob;
-use Biigle\Modules\Ptp\Jobs\UploadConvertedAnnotationsJob;
-use Biigle\Modules\Ptp\PtpExpectedArea;
 use Biigle\ImageAnnotation;
 use Biigle\Shape;
 use Biigle\Volume;
-use Biigle\Label;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Bus;
 use Ramsey\Uuid\Uuid;
 use Storage;
 /**
