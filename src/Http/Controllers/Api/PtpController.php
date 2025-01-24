@@ -22,8 +22,8 @@ class PtpController extends Controller
      * @param  $request
      * @return
      */
-    public function generatePtpJob(Request $request) {
-
+    public function generatePtpJob(Request $request)
+    {
         $this->validate($request, ['volume_id' => 'integer']);
         $volume = Volume::findOrFail($request->volume_id);
         $this->authorize('edit-in', $volume);
@@ -59,11 +59,6 @@ class PtpController extends Controller
                 'label' => $annotation->label_id,
             ];
         };
-
-        $inputDir = config('ptp.temp_dir').'/input-files-ptp/';
-        if (!file_exists($inputDir)) {
-            mkdir($inputDir, 0755, true);
-        }
 
         //$inputFile.'.json' will be used for image annotations, $inputFile.'_images.json' for image paths
         $inputFile = 'ptp/input-files/'.$volume->id;

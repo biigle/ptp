@@ -1,10 +1,14 @@
 <?php
 
-namespace Biigle\Tests\Modules\Ptp\Jobs;
+namespace Biigle\Tests\Modules\Ptp\Controller;
 
-use Biigle\MediaType;
 use ApiTestCase;
-use Biigle\Image;
+use Biigle\MediaType;
+use Biigle\Role;
+use Biigle\Tests\ImageTest;
+use Biigle\Tests\ProjectTest;
+use Biigle\Tests\UserTest;
+use Biigle\Tests\VolumeTest;
 use Illuminate\Support\Facades\Queue;
 
 
@@ -13,7 +17,7 @@ class PtpControllerTest extends ApiTestCase
     public function testCreateJob()
     {
         Queue::fake();
-        $image = Image::factory()->create(['volume_id' => $this->volume()->id]);
+        $image = ImageTest::create(['volume_id' => $this->volume()->id]);
 
         config(['ptp.ptp_storage_disk' => 'test']);
 
@@ -32,15 +36,21 @@ class PtpControllerTest extends ApiTestCase
 
     public function testVideoVolumes()
     {
-        $this->volume()->media_type_id = MediaType::videoId();
+        $project = ProjectTest::create();
+        $volume = VolumeTest::create(['media_type_id' => MediaType::videoId()]);
+        $project->addVolumeId($volume->id);
 
-        $this->beEditor();
-        $this->postJson('/api/v1/send-ptp-job', ['volume_id' => $this->volume()->id])->assertStatus(400);
+        $user = UserTest::create();
+        $project->addUserId($user->id, Role::editorId());
+
+        $this->be($user);
+
+        $this->postJson('/api/v1/send-ptp-job', ['volume_id' => $volume->id])->assertStatus(400);
     }
 
     public function testTiledImages()
     {
-        $image = Image::factory()->create(['volume_id' => $this->volume()->id, 'tiled' => true]);
+        $image = ImageTest::create(['volume_id' => $this->volume()->id, 'tiled' => true]);
         $this->beEditor();
         $this->postJson('/api/v1/send-ptp-job', ['volume_id' => $this->volume()->id])->assertStatus(400);
 
