@@ -5,8 +5,6 @@ namespace Biigle\Tests\Modules\Ptp\Jobs;
 use Biigle\MediaType;
 use ApiTestCase;
 use Biigle\Image;
-use Biigle\Tests\VolumeTest;
-use Biigle\Modules\MagicSam\Jobs\GenerateEmbedding;
 use Illuminate\Support\Facades\Queue;
 
 
