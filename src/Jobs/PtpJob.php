@@ -75,15 +75,15 @@ class PtpJob extends BaseJob implements ShouldQueue
         $json = $storage->json($this->inputFile.'.json');
 
         //Create input file with annotations
-        $tmpInputFile = $this->inputFile;
+        $tmpInputFile = $this->inputFile.'.json';
 
-        if (file_exists($tmpInputFile.'.json')) {
-            unlink($tmpInputFile.'.json');
-        } else if (!file_exists(dirname($tmpInputFile.'.json'))){
-            mkdir(dirname($tmpInputFile.'.json'), recursive:true);
+        if (file_exists($tmpInputFile)) {
+            unlink($tmpInputFile);
+        } else if (!file_exists(dirname($tmpInputFile))){
+            mkdir(dirname($tmpInputFile), recursive:true);
         }
 
-        file_put_contents($tmpInputFile.'.json', json_encode($json));
+        file_put_contents($tmpInputFile, json_encode($json));
 
         $imagePathInput = [];
 
@@ -92,7 +92,9 @@ class PtpJob extends BaseJob implements ShouldQueue
             $imagePathInput[$images[$i]->id] = $paths[$i];
         }
 
-        file_put_contents($tmpInputFile.'_images.json', json_encode($imagePathInput));
+        $tmpInputImageFile = $this->inputFile.'_images.json';
+
+        file_put_contents($tmpInputImageFile, json_encode($imagePathInput));
 
         if (!file_exists(dirname($this->outputFile))) {
             mkdir(dirname($this->outputFile), recursive:true);
@@ -100,7 +102,7 @@ class PtpJob extends BaseJob implements ShouldQueue
             unlink($this->outputFile);
         }
 
-        $command = "{$python} -u {$script} --image-paths-file {$tmpInputFile}_images.json --input-file {$tmpInputFile}.json --device {$device} --model-type {$modelType} --model-path {$modelPath} --output-file {$this->outputFile} ";
+        $command = "{$python} -u {$script} --image-paths-file {$tmpInputImageFile} --input-file {$tmpInputFile} --device {$device} --model-type {$modelType} --model-path {$modelPath} --output-file {$this->outputFile} ";
 
         exec("$command 2>&1", $lines, $code);
 
@@ -108,9 +110,12 @@ class PtpJob extends BaseJob implements ShouldQueue
             $lines = implode("\n", $lines);
             throw new Exception("Error while executing python script '{$script}':\n{$lines}", $code);
         }
-
     }
 
+    /**
+     * Upload the converted annotations to the DB
+     *
+    **/
     public function uploadConvertedAnnotations(): void
     {
         $jsonData = json_decode(file_get_contents($this->outputFile), true);
@@ -133,6 +138,10 @@ class PtpJob extends BaseJob implements ShouldQueue
         }
     }
 
+    /**
+     * Cleanup the existing job from the Volumes attribute
+     *
+    **/
     public function cleanupJob()
     {
         Volume::where('attrs->ptp_job_id', $this->id)->each(function ($volume) {
@@ -147,7 +156,5 @@ class PtpJob extends BaseJob implements ShouldQueue
     public function failed(?Throwable $exception): void
     {
         $this->cleanupJob();
-        parent::failed($exception);
-
     }
 }
