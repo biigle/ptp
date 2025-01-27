@@ -1,32 +1,33 @@
 <?php
+
 namespace Biigle\Tests\Modules\Ptp\Jobs;
+
 use Biigle\ImageAnnotation;
 use Biigle\ImageAnnotationLabel;
 use Biigle\Modules\Ptp\Jobs\PtpJob;
 use Biigle\Shape;
-use Biigle\Tests\ImageAnnotationLabelTest;
-use Biigle\Tests\ImageAnnotationTest;
-use Biigle\Tests\ImageTest;
-use Biigle\Tests\LabelTest;
-use Biigle\Tests\UserTest;
+use Biigle\Image;
+use Biigle\Label;
+use Biigle\User;
+use Biigle\Volume;
 use Ramsey\Uuid\Uuid;
 use TestCase;
-use Storage;
 
-//This test should initialize PtpJobTest, and check that the handle() method is called correctly.
 
 class PtpJobTest extends TestCase
 {
     public function setUp(): void
     {
-        $image = ImageTest::create();
-        $imageAnnotation = ImageAnnotationTest::create([
+        $volume = Volume::factory()->create();
+        $image = Image::factory()->create(['volume_id' => $volume->id]);
+
+        $imageAnnotation = ImageAnnotation::factory()->create([
             'image_id' => $image->id,
         ]);
-        $this->label = LabelTest::create();
-        $this->user = UserTest::create();
-        $this->user2 = UserTest::create();
-        $imageAnnotationLabel = ImageAnnotationLabelTest::create([
+        $this->label = Label::factory()->create();
+        $this->user = User::factory()->create();
+        $this->user2 = User::factory()->create();
+        $imageAnnotationLabel = ImageAnnotationLabel::factory()->create([
             'annotation_id' => $imageAnnotation->id,
             'label_id' => $this->label->id,
             'user_id' => $this->user->id,
