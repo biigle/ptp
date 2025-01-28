@@ -62,42 +62,45 @@ class PtpJobTest extends TestCase
         file_put_contents(config('ptp.temp_dir').'/'.$this->outputFile, json_encode($outputFileContent));
     }
 
-    public function testHandle(): void
+    public function testPtpHandle(): void
     {
         //Test that the PTP job handle correctly calls the handle, succedes and cleans up the volume
         $job = new MockPtpJob($this->inputFile, $this->outputFile, $this->user, $this->uuid);
         $job->handle();
         $this->assertTrue($job->pythonCalled);
-        $this->assertNull($this->volume->attrs['ptp_job_id']);
+        $volume = Volume::where('id', $this->volume->id)->get()->first();
+        $this->assertFalse(isset($volume->attrs['ptp_job_id']));
     }
 
-    public function testPythonFailed(): void
+    public function testPtpPythonFailed(): void
     {
         //Here we test that the real python script is called, fails and the PTP job is cleared
+        $volume = Volume::where('id', $this->volume->id)->get()->first();
         $this->expectException(PythonException::class);
         $job = new PtpJob($this->inputFile, $this->outputFile, $this->user, $this->uuid);
         $job->handle();
-        $this->assertNull($this->volume->attrs['ptp_job_id']);
+        $volume = Volume::where('id', $this->volume->id)->get()->first();
+        $this->assertFalse(isset($volume->attrs['ptp_job_id']));
     }
 
-    public function testUploadedAnnotations(): void
+    public function testPtpUploadedAnnotations(): void
     {
         //Test that annotations are correctly uploaded by the uploadAnnotations method
         $job = new MockPtpJob($this->inputFile, $this->outputFile, $this->user2, $this->uuid);
         $job->uploadConvertedAnnotations();
 
-        $imageAnnotationValues = ImageAnnotation::where('image_id', $this->image->id)->whereNot('id', $this->imageAnnotation->id)->select('id', 'points', 'image_id', 'shape_id')->get()->all();
+        $imageAnnotationValues = ImageAnnotation::where('image_id', $this->image->id)->whereNot('id', $this->imageAnnotation->id)->select('id', 'points', 'image_id', 'shape_id')->get()->first()->toArray();
         $expectedValue = [
-            'id' => $imageAnnotationValues[0]->id,
+            'id' => $imageAnnotationValues['id'],
             'points' => [1,2,3,4,5,6],
             'image_id' => $this->image->id,
             'shape_id' => Shape::polygonId(),
         ];
-        $this->assertEquals($imageAnnotationValues[0]->toArray(), $expectedValue);
+        $this->assertEquals($imageAnnotationValues, $expectedValue);
 
-        $imageAnnotationLabelValues = ImageAnnotationLabel::where('annotation_id', $imageAnnotationValues[0]->id)->select('label_id', 'user_id')->get()->all();
+        $imageAnnotationLabelValues = ImageAnnotationLabel::where('annotation_id', $imageAnnotationValues['id'])->select('label_id', 'user_id')->get()->first()->toArray();
         $expectedValue = ['label_id' => $this->label->id, 'user_id' => $this->user2->id];
-        $this->assertEquals($imageAnnotationLabelValues[0]->toArray(), $expectedValue);
+        $this->assertEquals($imageAnnotationLabelValues, $expectedValue);
     }
 }
 
