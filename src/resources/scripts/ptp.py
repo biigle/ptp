@@ -14,12 +14,12 @@ from PIL import Image
 from segment_anything import SamPredictor, sam_model_registry
 
 PointAnnotation = namedtuple(
-    "Annotation", ["x", "y", "label", "annotation_id", "expected_area"], defaults={"expected_area" : None}
+    "Annotation",
+    ["x", "y", "label", "annotation_id", "expected_area"],
+    defaults={"expected_area": None},
 )
 
 
-# for some very small annotation it seems to work better to zoom further in
-# (this is somewhat unsafe for large objects as we might cut off the object)
 def super_zoom_sam(
     ann_point: np.array, unsharp_image: np.array, sam: SamPredictor, expected_area: int
 ) -> list:
@@ -65,8 +65,6 @@ def super_zoom_sam(
     return [contour, contour_area, x_off, y_off, crop_ann_point, croppedSAM]
 
 
-# the annotation might be slightly off, replace the annotation point with variations of it and compare to previous sizes to validate the annotation
-# (this is somewhat unsafe for objects with a lot of variation in size, either to properties inherent to object or to the distance to the camera)
 def inaccurate_annotation_sam(
     crop_ann_point: np.array,
     x_off: int,
@@ -451,7 +449,6 @@ def mask_to_contour(
             return results[idx]
         else:
             # otherwise get the one with the best score
-            #TODO: sometimes here it breaks
             idx = np.argsort(scores)[::-1]
             mask = np.reshape(masks[idx[0]], (img_height, img_width))
     else:
@@ -568,12 +565,10 @@ def process_annotation(
             "image_id": image_id,
             "label_id": label_id,
             "annotation_id": annotation.annotation_id,
-
             "contour_area": contour_area,
             "confidence": 1,
             "points": contour.tolist(),
         }
-    # ... use multiple positive points in addition
     contour, contour_area = multipoint_sam(
         crop_ann_point, x_off, y_off, croppedSAM, annotation.expected_area
     )
@@ -756,7 +751,7 @@ if __name__ == "__main__":
     # create the sam predictor
     sam = SamPredictor(sam_model)
 
-    #Compute expected areasa
+    # Compute expected areasa
     for image_id, annotations in input_values.items():
         if len(annotations) == 0:
             logging.error(f"No annotations to load for image with id {image_id}!")
@@ -769,19 +764,27 @@ if __name__ == "__main__":
         image = Image.open(image_path)
         points = [
             PointAnnotation(
-                annotation["points"][0], annotation["points"][1], annotation["label"], annotation["annotation_id"], None)
-            for annotation in annotations]
+                annotation["points"][0],
+                annotation["points"][1],
+                annotation["label"],
+                annotation["annotation_id"],
+                None,
+            )
+            for annotation in annotations
+        ]
 
         for annotation in points:
-            resulting_annotations += process_image(
-                annotation, image, image_id, sam
-            )
+            resulting_annotations += process_image(annotation, image, image_id, sam)
 
     # if the save argument is given save the annotations to the given path
     expected_areas = pd.DataFrame(resulting_annotations)
-    expected_areas = expected_areas.groupby("label_id").apply(lambda x: x.contour_area.median()).to_dict()
+    expected_areas = (
+        expected_areas.groupby("label_id")
+        .apply(lambda x: x.contour_area.median())
+        .to_dict()
+    )
 
-    #now that we have the expected areas, we can convert annotations
+    # now that we have the expected areas, we can convert annotations
     resulting_annotations = []
 
     for image_id, annotations in input_values.items():
@@ -796,17 +799,19 @@ if __name__ == "__main__":
         image = Image.open(image_path)
         points = [
             PointAnnotation(
-                annotation["points"][0], annotation["points"][1], annotation["label"], annotation["annotation_id"], expected_areas.get(annotation["label"])
+                annotation["points"][0],
+                annotation["points"][1],
+                annotation["label"],
+                annotation["annotation_id"],
+                expected_areas.get(annotation["label"]),
             )
             for annotation in annotations
         ]
 
         for annotation in points:
-            resulting_annotations += process_image(
-                annotation, image, image_id, sam
-            )
+            resulting_annotations += process_image(annotation, image, image_id, sam)
         # if the save argument is given save the annotations to the given path
     os.makedirs(os.path.dirname(args.output_file), exist_ok=True)
-    pd.DataFrame(resulting_annotations).loc[:,["image_id","label_id","annotation_id","confidence", "points"]].to_json(args.output_file, orient="records")
-
-
+    pd.DataFrame(resulting_annotations).loc[
+        :, ["image_id", "label_id", "annotation_id", "confidence", "points"]
+    ].to_json(args.output_file, orient="records")
