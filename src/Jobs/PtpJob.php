@@ -4,6 +4,7 @@ use Biigle\Jobs\Job as BaseJob;
 use Biigle\Image;
 use Biigle\ImageAnnotation;
 use Biigle\ImageAnnotationLabel;
+use Biigle\Modules\Ptp\Exceptions\PythonException;
 use Biigle\Shape;
 use Biigle\User;
 use Biigle\Volume;

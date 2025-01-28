@@ -1,5 +1,5 @@
 <?php
-namespace Biigle\Modules\Ptp\Exception;
+namespace Biigle\Modules\Ptp\Exceptions;
 
 use Exception;
 

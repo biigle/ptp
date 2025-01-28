@@ -4,7 +4,7 @@ namespace Biigle\Tests\Modules\Ptp\Jobs;
 
 use Biigle\ImageAnnotation;
 use Biigle\ImageAnnotationLabel;
-use Biigle\Modules\Ptp\Exception\PythonException;
+use Biigle\Modules\Ptp\Exceptions\PythonException;
 use Biigle\Modules\Ptp\Jobs\PtpJob;
 use Biigle\Shape;
 use Biigle\Image;
