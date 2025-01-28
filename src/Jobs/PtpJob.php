@@ -21,7 +21,7 @@ class PtpJob extends BaseJob implements ShouldQueue
 {
     use Batchable, InteractsWithQueue, Queueable, SerializesModels;
     /**
-     * Type of the Job between compute-area and ptp
+     * Job used for converting Point annotations to Polygons
      *
      * @var $outputFile File that will contain the resulting conversions
      * @var $inputFile Input JSON file containing the annotations to convert
@@ -108,7 +108,7 @@ class PtpJob extends BaseJob implements ShouldQueue
 
         if ($code !== 0) {
             $lines = implode("\n", $lines);
-            throw new Exception("Error while executing python script '{$script}':\n{$lines}", $code);
+            throw new PythonException("Error while executing python script '{$script}':\n{$lines}", $code);
         }
     }
 
@@ -158,3 +158,4 @@ class PtpJob extends BaseJob implements ShouldQueue
         $this->cleanupJob();
     }
 }
+
