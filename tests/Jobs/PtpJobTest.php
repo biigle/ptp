@@ -68,18 +68,18 @@ class PtpJobTest extends TestCase
         $job = new MockPtpJob($this->inputFile, $this->outputFile, $this->user, $this->uuid);
         $job->handle();
         $this->assertTrue($job->pythonCalled);
-        $volume = Volume::where('id', $this->volume->id)->get()->first();
+        $volume = Volume::where('id', $this->volume->id)->first();
         $this->assertFalse(isset($volume->attrs['ptp_job_id']));
     }
 
     public function testPtpPythonFailed(): void
     {
         //Here we test that the real python script is called, fails and the PTP job is cleared
-        $volume = Volume::where('id', $this->volume->id)->get()->first();
+        $volume = Volume::where('id', $this->volume->id)->first();
         $this->expectException(PythonException::class);
         $job = new PtpJob($this->inputFile, $this->outputFile, $this->user, $this->uuid);
         $job->handle();
-        $volume = Volume::where('id', $this->volume->id)->get()->first();
+        $volume = Volume::where('id', $this->volume->id)->first();
         $this->assertFalse(isset($volume->attrs['ptp_job_id']));
     }
 
@@ -89,7 +89,7 @@ class PtpJobTest extends TestCase
         $job = new MockPtpJob($this->inputFile, $this->outputFile, $this->user2, $this->uuid);
         $job->uploadConvertedAnnotations();
 
-        $imageAnnotationValues = ImageAnnotation::where('image_id', $this->image->id)->whereNot('id', $this->imageAnnotation->id)->select('id', 'points', 'image_id', 'shape_id')->get()->first()->toArray();
+        $imageAnnotationValues = ImageAnnotation::where('image_id', $this->image->id)->whereNot('id', $this->imageAnnotation->id)->select('id', 'points', 'image_id', 'shape_id')->first()->toArray();
         $expectedValue = [
             'id' => $imageAnnotationValues['id'],
             'points' => [1,2,3,4,5,6],
@@ -98,7 +98,7 @@ class PtpJobTest extends TestCase
         ];
         $this->assertEquals($imageAnnotationValues, $expectedValue);
 
-        $imageAnnotationLabelValues = ImageAnnotationLabel::where('annotation_id', $imageAnnotationValues['id'])->select('label_id', 'user_id')->get()->first()->toArray();
+        $imageAnnotationLabelValues = ImageAnnotationLabel::where('annotation_id', $imageAnnotationValues['id'])->select('label_id', 'user_id')->first()->toArray();
         $expectedValue = ['label_id' => $this->label->id, 'user_id' => $this->user2->id];
         $this->assertEquals($imageAnnotationLabelValues, $expectedValue);
     }
