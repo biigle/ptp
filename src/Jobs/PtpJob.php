@@ -9,6 +9,7 @@ use Biigle\Shape;
 use Biigle\User;
 use Biigle\Volume;
 use Exception;
+use File;
 use FileCache;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -71,6 +72,9 @@ class PtpJob extends BaseJob implements ShouldQueue
         $device = config('ptp.device');
         $modelPath = config('ptp.model_path');
         $modelType = config('ptp.model_type');
+        $checkpointUrl = config('ptp.model_url');
+
+        $this->maybeDownloadCheckpoint($checkpointUrl, $modelPath);
 
         $storage = Storage::disk(config('ptp.ptp_storage_disk'));
         $json = $storage->json($this->inputFile.'.json');
@@ -143,7 +147,7 @@ class PtpJob extends BaseJob implements ShouldQueue
      * Cleanup the existing job from the Volumes attribute
      *
     **/
-    public function cleanupJob()
+    public function cleanupJob(): void
     {
         Volume::where('attrs->ptp_job_id', $this->id)->each(function ($volume) {
             $attrs = $volume->attrs;
@@ -157,6 +161,20 @@ class PtpJob extends BaseJob implements ShouldQueue
     public function failed(?Throwable $exception): void
     {
         $this->cleanupJob();
+    }
+
+    protected function maybeDownloadCheckpoint($from, $to): void
+    {
+        if (!File::exists($to)) {
+            if (!File::exists(dirname($to))) {
+                File::makeDirectory(dirname($to), 0700, true, true);
+            }
+            $success = @copy($from, $to);
+
+            if (!$success) {
+                throw new Exception("Failed to download checkpoint from '{$from}'.");
+            }
+        }
     }
 }
 
