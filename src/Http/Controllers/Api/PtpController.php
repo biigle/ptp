@@ -72,7 +72,6 @@ class PtpController extends Controller
 
         PtpJob::dispatch($inputFile, $outputFile, $request->user(), $id);
 
-        return ['submitted' => true];
     }
 
     /**
