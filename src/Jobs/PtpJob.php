@@ -46,7 +46,6 @@ class PtpJob extends BaseJob implements ShouldQueue
      */
     public function handle()
     {
-
         $callback = function ($images, $paths){
             $this->python($paths,  $images);
         };
