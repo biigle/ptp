@@ -18,7 +18,6 @@ class PtpControllerTest extends ApiTestCase
     public function testCreateJob(): void
     {
         //Test creating a Job with different types of users
-        Queue::fake();
         $image = ImageTest::create(['volume_id' => $this->volume()->id]);
 
         config(['ptp.ptp_storage_disk' => 'test']);
