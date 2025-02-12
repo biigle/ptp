@@ -17,7 +17,7 @@ import {Messages} from './import'
 
 
 export default {
-  data(){
+  data() {
         return {
             volumeId: biigle.$require('volumes.volumeId'),
             selectedLabel: null,
