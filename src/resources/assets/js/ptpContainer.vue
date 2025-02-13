@@ -25,7 +25,6 @@ export default {
   },
    methods: {
         sendPtpRequest(){
-            console.log("ss");
             PtpJobApi.save({id: this.volumeId}, {})
                 .catch(
                     (error) => {
