@@ -2,8 +2,8 @@
     <div class="ptp-container">
         <form class="form-stacked">
             <div class="form-group">
-                <h4>Create a new Point to Polygon job (experimental)</h4>
-                <span> Run the Point to polygon transformation using SAM</span><br>
+                <h4>Create a new Point to Polygon job  <span class="label label-warning">experimental</span></h4>
+                <span>Run the point to polygon transformation using Magic SAM</span><br>
             </div>
             <div class="form-group">
               <button class="btn btn-success btn-block" type="button" title="Run Point to Polygon conversion on this volume" @click="sendPtpRequest">Submit</button>
@@ -24,7 +24,7 @@ export default {
         }
   },
    methods: {
-        sendPtpRequest(){
+        sendPtpRequest() {
             PtpJobApi.save({id: this.volumeId}, {})
                 .catch(
                     (error) => {
