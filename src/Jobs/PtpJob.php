@@ -51,12 +51,13 @@ class PtpJob extends BaseJob implements ShouldQueue
     public function handle()
     {
         $callback = function ($images, $paths){
-            $this->python($paths,  $images);
+            $this->generateImageInputFile($paths,  $images);
         };
         $imageData = $this->generateInputFile();
         $imageIds = array_keys($imageData);
         $images = Image::whereIn('id', $imageIds)->get()->all();
         FileCache::batch($images, $callback);
+        $this->python();
         $this->uploadConvertedAnnotations();
         $this->cleanupJob();
     }
@@ -102,12 +103,28 @@ class PtpJob extends BaseJob implements ShouldQueue
             mkdir(dirname($this->tmpInputFile), recursive:true);
         }
 
+
         file_put_contents($this->tmpInputFile, $jsonData);
         return $imageAnnotationArray;
     }
+
     //TODO: test if i can generate image input file here
-    protected function generateImageInputFile(array $paths, array $images): void
-    {}
+    /**
+     *
+     *
+     * @param  $paths
+     * @param  $images
+     */
+    public function generateImageInputFile(array $paths, array $images): void
+    {
+        $imagePathInput = [];
+        //Create input file with images
+        for ($i = 0, $size = count($paths); $i < $size; $i++){
+            $imagePathInput[$images[$i]->id] = $paths[$i];
+        }
+
+        file_put_contents($this->tmpImageInputFile, json_encode($imagePathInput));
+    }
 
     /**
      * Run the python script for Point to Polygon conversion
@@ -115,7 +132,7 @@ class PtpJob extends BaseJob implements ShouldQueue
      * @param  $paths The paths where the images is found
      * @param  $images Array of images
      */
-    protected function python(array $paths, array $images): void
+    protected function python(): void
     {
         $code = 0;
         $lines = [];
@@ -127,13 +144,6 @@ class PtpJob extends BaseJob implements ShouldQueue
         $checkpointUrl = config('ptp.model_url');
 
         $this->maybeDownloadCheckpoint($checkpointUrl, $modelPath);
-
-        //Create input file with images
-        for ($i = 0, $size = count($paths); $i < $size; $i++){
-            $imagePathInput[$images[$i]->id] = $paths[$i];
-        }
-
-        file_put_contents($this->tmpImageInputFile, json_encode($imagePathInput));
 
         if (!file_exists(dirname($this->outputFile))) {
             mkdir(dirname($this->outputFile), recursive:true);
@@ -158,9 +168,6 @@ class PtpJob extends BaseJob implements ShouldQueue
     public function uploadConvertedAnnotations(): void
     {
         $jsonData = json_decode(file_get_contents($this->outputFile), true);
-        if (is_null($jsonData)) {
-            throw new Exception("Error while reading file $this->outputFile");
-        }
         $polygonShape = Shape::polygonId();
         foreach ($jsonData as $annotation) {
             $newAnnotation = ImageAnnotation::findOrFail($annotation['annotation_id'])->replicate();
