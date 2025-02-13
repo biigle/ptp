@@ -658,8 +658,6 @@ def crop_annotation(
     ]
 
 
-# process a single image
-# annotations is a dataframe containing all annotations of the image
 def process_image(
     annotation: PointAnnotation,
     image: Image,
@@ -752,11 +750,11 @@ if __name__ == "__main__":
     sam = SamPredictor(sam_model)
 
     # Compute expected areasa
+    resulting_annotations = []
     for image_id, annotations in input_values.items():
         if len(annotations) == 0:
             logging.error(f"No annotations to load for image with id {image_id}!")
             continue
-        resulting_annotations = []
         image_path = image_paths.get(image_id)
         if image_path is None:
             logging.error(f"Image path for {image_id} not found!")
