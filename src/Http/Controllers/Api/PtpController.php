@@ -26,12 +26,12 @@ class PtpController extends Controller
      * Then, it generates a job for executing the conversion and then upload the new annotations to the DB
      *
      * @param  $request
+     * @param $volumeId
      * @return
      */
-    public function generatePtpJob(Request $request)
+    public function generatePtpJob(Request $request, int $volumeId)
     {
-        $this->validate($request, ['volume_id' => 'integer']);
-        $volume = Volume::findOrFail($request->volume_id);
+        $volume = Volume::findOrFail($volumeId);
         $this->authorize('edit-in', $volume);
 
         if (!$volume->isImageVolume() || $volume->hasTiledImages()){
@@ -39,44 +39,28 @@ class PtpController extends Controller
         }
 
         if (is_array($volume->attrs) && array_key_exists('ptp_job_id', $volume->attrs)) {
-            abort(400, 'Another Point to polygon conversion job is running in this volume!');
+            abort(400, 'Another point to polygon conversion job is running in this volume!');
         }
 
-        $imageAnnotationArray = [];
-
         $pointShapeId = Shape::pointId(); //Find annotations with selected label in desired volume
-        $annotations = ImageAnnotation::join('image_annotation_labels','image_annotations.id', '=', 'image_annotation_labels.annotation_id')
+        $annotationsCount = ImageAnnotation::join('image_annotation_labels','image_annotations.id', '=', 'image_annotation_labels.annotation_id')
             ->join('images','image_annotations.image_id', '=','images.id')
-            ->where('images.volume_id', $volume->id)
+            ->where('images.volume_id', $volumeId)
             ->where('image_annotations.shape_id', $pointShapeId)
-            ->select('image_annotations.id as id', 'images.id as image_id', 'image_annotations.points as points','image_annotations.shape_id as shape_id', 'image_annotation_labels.label_id as label_id')
-            ->get();
+            ->count();
 
-
-        foreach ($annotations as $annotation) {
-            if (!isset($imageAnnotationArray[$annotation->image_id])) {
-                $imageAnnotationArray[$annotation->image_id] = [];
-            }
-            $imageAnnotationArray[$annotation->image_id][] = [
-                'annotation_id' => $annotation->id,
-                'points' => $annotation->points,
-                'shape' => $annotation->shape_id,
-                'image' => $annotation->image_id,
-                'label' => $annotation->label_id,
-            ];
-        };
+        if ($annotationsCount == 0){
+            abort(400, 'No point annotations to convert!');
+        }
 
         //$inputFile.'.json' will be used for image annotations, $inputFile.'_images.json' for image paths
         $inputFile = 'ptp/input-files/'.$volume->id;
-        $jsonData = json_encode($imageAnnotationArray);
-        $storage = Storage::disk(config('ptp.ptp_storage_disk'));
-        $storage->put(config('ptp.temp_dir').'/'.$inputFile.'.json', $jsonData);
 
         $outputFile = 'ptp/'.$volume->id.'_converted_annotations.json';
 
         $id = $this->setUniquePtpJob($volume);
 
-        PtpJob::dispatch($inputFile, $outputFile, $request->user(), $id);
+        PtpJob::dispatch($volume->id, $inputFile, $outputFile, $request->user(), $id);
 
     }
 

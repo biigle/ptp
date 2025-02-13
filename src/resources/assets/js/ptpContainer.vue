@@ -25,12 +25,14 @@ export default {
   },
    methods: {
         sendPtpRequest(){
-            PtpJobApi.sendPtpJob({volume_id: this.volumeId}).catch(
-                (error) => {
-                    if (error.status == 400){
-                        Messages.danger(error.body['message'])
+            console.log("ss");
+            PtpJobApi.save({id: this.volumeId}, {})
+                .catch(
+                    (error) => {
+                        if (error.status == 400){
+                            Messages.danger(error.body['message'])
+                        }
                     }
-                }
             );
         }
     }
