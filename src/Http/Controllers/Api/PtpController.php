@@ -15,6 +15,12 @@ use Storage;
 class PtpController extends Controller
 {
     /**
+     * Ignore this job if the project or volume does not exist any more.
+     *
+     * @var bool
+     */
+    protected $deleteWhenMissingModels = true;
+    /**
      * Generate Point to Polygon Job Chain.
      * This method generates, based on the request. The jobs generated are first for computing and uploading the expected areas of converted polygons.
      * Then, it generates a job for executing the conversion and then upload the new annotations to the DB
