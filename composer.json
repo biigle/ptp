@@ -12,6 +12,10 @@
       {
          "name": "Martin Zurowietz",
          "email": "m.zurowietz@uni-bielefeld.de"
+      },
+      {
+         "name": "Davide Brembilla",
+         "email": "davide.brembilla@uni-bielefeld.de"
       }
     ],
     "autoload": {
