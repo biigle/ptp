@@ -21,7 +21,7 @@ class PtpController extends Controller
      */
     protected $deleteWhenMissingModels = true;
     /**
-     * Generate Point to Polygon Job Chain.
+     * Generate Point to Polygon Job.
      * This method generates, based on the request. The jobs generated are first for computing and uploading the expected areas of converted polygons.
      * Then, it generates a job for executing the conversion and then upload the new annotations to the DB
      *
@@ -29,7 +29,7 @@ class PtpController extends Controller
      * @param $volumeId
      * @return
      */
-    public function generatePtpJob(Request $request, int $volumeId)
+    public function store(Request $request, int $volumeId)
     {
         $volume = Volume::findOrFail($volumeId);
         $this->authorize('edit-in', $volume);
@@ -43,8 +43,7 @@ class PtpController extends Controller
         }
 
         $pointShapeId = Shape::pointId(); //Find annotations with selected label in desired volume
-        $annotationsCount = ImageAnnotation::join('image_annotation_labels','image_annotations.id', '=', 'image_annotation_labels.annotation_id')
-            ->join('images','image_annotations.image_id', '=','images.id')
+        $annotationsCount = ImageAnnotation::join('images','image_annotations.image_id', '=','images.id')
             ->where('images.volume_id', $volumeId)
             ->where('image_annotations.shape_id', $pointShapeId)
             ->count();
@@ -61,7 +60,6 @@ class PtpController extends Controller
         $id = $this->setUniquePtpJob($volume);
 
         PtpJob::dispatch($volume->id, $inputFile, $outputFile, $request->user(), $id);
-
     }
 
     /**

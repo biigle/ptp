@@ -5,6 +5,6 @@ $router->group([
     'namespace' => 'Api',
     'prefix' => 'api/v1'
 ], function ($router) {
-    $router->post('send-ptp-job/{volumeId}', 'PtpController@generatePtpJob');
+    $router->post('send-ptp-job/{volumeId}', 'PtpController@store');
 });
 
