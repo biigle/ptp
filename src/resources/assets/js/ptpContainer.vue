@@ -6,7 +6,14 @@
                 <span>Run the point to polygon transformation using Magic SAM</span><br>
             </div>
             <div class="form-group">
-              <button class="btn btn-success btn-block" type="button" title="Run Point to Polygon conversion on this volume" @click="sendPtpRequest">Submit</button>
+              <button
+                  class="btn btn-success btn-block"
+                  type="button"
+                  title="Run Point to Polygon conversion on this volume"
+                  @click="sendPtpRequest"
+                  disabled="{{ this.isRunning }}">
+                  Submit
+              </button>
             </div>
         </form>
     </div>
@@ -23,7 +30,13 @@ export default {
             selectedLabel: null,
         }
   },
-   methods: {
+  created(){
+    this.isRunning = biigle.$require('volumes.ptpJobId') !== null;
+  },
+  methods: {
+        makeButtonDisabled(){
+            this.isRunning = true;
+        },
         sendPtpRequest() {
             PtpJobApi.save({id: this.volumeId}, {})
                 .then(makeButtonDisabled, handleErrorResponse)

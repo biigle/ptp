@@ -5,5 +5,8 @@
 @endif
 @push('scripts')
     <script src="{{ cachebust_asset('vendor/ptp/scripts/main.js') }}"></script>
+    <script type="text/javascript">
+        biigle.$declare('volumes.ptpJobId', $volume->attrs['ptp_job_id'] ?? null);
+    </script>
 @endpush
 
