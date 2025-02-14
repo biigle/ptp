@@ -3,9 +3,7 @@
 return [
     /*
     | Queue to submit new PTP jobs to.
-    */
-    'job_queue' => env('PTP_JOB_QUEUE', 'default'),
-
+    */ 'job_queue' => env('PTP_JOB_QUEUE', 'default'),
     /*
     | Queue connection to submit new PTP jobs to.
     */
