@@ -10,6 +10,7 @@ use Biigle\Modules\Ptp\Notifications\PtpJobFailed;
 use Biigle\Shape;
 use Biigle\User;
 use Biigle\Volume;
+use Biigle\VolumeFile;
 use Exception;
 use File;
 use FileCache;
@@ -25,6 +26,7 @@ class PtpJob extends BaseJob implements ShouldQueue
     use Batchable, InteractsWithQueue, Queueable, SerializesModels;
     private string $tmpInputFile;
     private string $tmpImageInputFile;
+    public static $insertChunkSize = 5000;
     /**
      * Job used for converting Point annotations to Polygons
      *
@@ -36,7 +38,14 @@ class PtpJob extends BaseJob implements ShouldQueue
      * @var $id Uuid associated to the job
      *
      */
-    public function __construct(public int $volumeId, public string $volumeName, public string $inputFile, public string $outputFile, public User $user, public string $id)
+    public function __construct(
+        public int $volumeId,
+        public string $volumeName,
+        public string $inputFile,
+        public string $outputFile,
+        public User $user,
+        public string $id,
+    )
     {
         $this->volumeId = $volumeId;
         $this->volumeName = $volumeName;
@@ -172,21 +181,79 @@ class PtpJob extends BaseJob implements ShouldQueue
     public function uploadConvertedAnnotations(): void
     {
         $jsonData = json_decode(file_get_contents($this->outputFile), true);
+
+        if (count($jsonData) == 0) {
+            throw new Exception('No files converted!');
+        }
+
         $polygonShape = Shape::polygonId();
-        foreach ($jsonData as $annotation) {
-            $newAnnotation = ImageAnnotation::findOrFail($annotation['annotation_id'])->replicate();
-            $newAnnotation->points = $annotation['points'];
-            $newAnnotation->shape_id = $polygonShape;
-            $newAnnotation->save();
-            $imageAnnotationLabel = [
+
+        $file = null;
+        $insertAnnotations = [];
+        $insertAnnotationLabels = [];
+
+
+        foreach ($jsonData as $idx => $annotation) {
+            $newAnnotation = ImageAnnotation::where('id', $annotation['annotation_id'])
+                ->first()
+                ->replicate();
+
+            if (is_null($file)){
+                $file = $newAnnotation->getFile();
+            }
+            $newAnnotation =  $newAnnotation->toArray();
+
+            $newAnnotation['points'] = json_encode($annotation['points']);
+            $newAnnotation['shape_id'] = $polygonShape;
+            unset($newAnnotation['file']);
+
+            $insertAnnotations[] = $newAnnotation;
+            $insertAnnotationLabels[] = [
                 'label_id' => $annotation['label_id'],
-                'annotation_id' => $newAnnotation->id,
                 'user_id' => $this->user->id,
                 'confidence' => 1.0,
             ];
-            ImageAnnotationLabel::insert($imageAnnotationLabel) ;
+
+            if ($idx > 0 && ($idx % static::$insertChunkSize) === 0) {
+                $this->insertAnnotationChunk($file, $insertAnnotations, $insertAnnotationLabels);
+                $insertAnnotations = [];
+                $insertAnnotationLabels = [];
+            }
         }
+
+        $this->insertAnnotationChunk($file, $insertAnnotations, $insertAnnotationLabels);
     }
+
+    protected function insertAnnotationChunk(
+        VolumeFile $file,
+        array $annotations,
+        array $annotationLabels
+    ): void
+    {
+        $file->annotations()->insert($annotations);
+
+        $ids = $file->annotations()
+            ->orderBy('id', 'desc')
+            ->take(count($annotations))
+            ->pluck('id')
+            ->reverse()
+            ->values()
+            ->toArray();
+
+        foreach ($ids as $index => $id) {
+            foreach ($annotationLabels as &$annotationLabel) {
+                $annotationLabel['annotation_id'] = $id;
+                $annotationLabel['confidence'] = 1.0;
+            }
+        }
+
+        // Flatten. Use array_values to prevent accidental array unpacking with string
+        // keys (which makes the linter complain).
+        $annotationLabels = array_merge(...array_values($annotationLabels));
+
+        ImageAnnotationLabel::insert($annotationLabels);
+    }
+
 
     /**
      * Cleanup the existing job from the Volumes attribute
@@ -200,7 +267,6 @@ class PtpJob extends BaseJob implements ShouldQueue
             $volume->attrs = $attrs;
             $volume->save();
         });
-
     }
 
     /**
