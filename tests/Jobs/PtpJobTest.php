@@ -11,6 +11,7 @@ use Biigle\Image;
 use Biigle\Label;
 use Biigle\User;
 use Biigle\Volume;
+use Exception;
 use Ramsey\Uuid\Uuid;
 use TestCase;
 
@@ -25,7 +26,6 @@ class PtpJobTest extends TestCase
 
         $attrs = $this->volume->attrs;
         $this->uuid = Uuid::uuid4();
-
         $attrs['ptp_job_id'] = $this->uuid;
         $this->volume->attrs = $attrs;
         $this->volume->save();
@@ -88,7 +88,12 @@ class PtpJobTest extends TestCase
     public function testPtpHandle(): void
     {
         //Test that the PTP job handle correctly calls the handle, succedes and cleans up the volume
-        $job = new MockPtpJob($this->volume->id, $this->volume->name, $this->inputFile, $this->outputFile, $this->user, $this->uuid);
+        $job = new MockPtpJob(
+            $this->volume->id, $this->volume->name, $this->inputFile, $this->outputFile, $this->user, $this->uuid
+        );
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('No files converted!');
         try {
             file_put_contents(config('ptp.temp_dir').'/'.$this->outputFile, '[]');
             $this->setUpAnnotations();
@@ -96,6 +101,8 @@ class PtpJobTest extends TestCase
             $this->assertTrue($job->pythonCalled);
             $volume = Volume::where('id', $this->volume->id)->first();
             $this->assertFalse(isset($volume->attrs['ptp_job_id']));
+        } catch(Exception $e) {
+            throw ($e);
         } finally {
             unlink(config('ptp.temp_dir').'/'.$this->inputFile.'.json');
             unlink(config('ptp.temp_dir').'/'.$this->inputFile.'_images.json');
@@ -173,7 +180,8 @@ class PtpJobTest extends TestCase
                 'image_id' => $this->image->id,
                 'shape_id' => Shape::polygonId(),
             ];
-            $this->assertEquals($imageAnnotationValues, $expectedValue);
+
+            $this->assertEquals($expectedValue, $imageAnnotationValues);
 
             $imageAnnotationLabelValues = ImageAnnotationLabel::where('annotation_id', $imageAnnotationValues['id'])->select('label_id', 'user_id')->first()->toArray();
             $expectedValue = ['label_id' => $this->label->id, 'user_id' => $this->user2->id];
