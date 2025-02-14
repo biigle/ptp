@@ -59,7 +59,7 @@ class PtpController extends Controller
 
         $id = $this->setUniquePtpJob($volume);
 
-        PtpJob::dispatch($volume->id, $inputFile, $outputFile, $request->user(), $id);
+        PtpJob::dispatch($volume->id, $volume->name, $inputFile, $outputFile, $request->user(), $id);
     }
 
     /**

@@ -5,6 +5,8 @@ use Biigle\Image;
 use Biigle\ImageAnnotation;
 use Biigle\ImageAnnotationLabel;
 use Biigle\Modules\Ptp\Exceptions\PythonException;
+use Biigle\Modules\Ptp\Notifications\PtpJobConcluded;
+use Biigle\Modules\Ptp\Notifications\PtpJobFailed;
 use Biigle\Shape;
 use Biigle\User;
 use Biigle\Volume;
@@ -27,15 +29,17 @@ class PtpJob extends BaseJob implements ShouldQueue
      * Job used for converting Point annotations to Polygons
      *
      * @var $volumeId Id of the volume for the PTP Job
+     * @var $volumeName Name of the volume for the PTP Job
      * @var $outputFile File that will contain the resulting conversions
      * @var $inputFile Input JSON file containing the annotations to convert
      * @var $user User starting the PtpJob
      * @var $id Uuid associated to the job
      *
      */
-    public function __construct(public int $volumeId, public string $inputFile, public string $outputFile, public User $user, public string $id)
+    public function __construct(public int $volumeId, public string $volumeName, public string $inputFile, public string $outputFile, public User $user, public string $id)
     {
         $this->volumeId = $volumeId;
+        $this->volumeName = $volumeName;
         $this->outputFile = config('ptp.temp_dir').'/'.$outputFile;
         $this->tmpInputFile = config('ptp.temp_dir').'/'.$inputFile.'.json';
         $this->tmpImageInputFile = config('ptp.temp_dir').'/'.$inputFile.'_images.json';
@@ -60,6 +64,7 @@ class PtpJob extends BaseJob implements ShouldQueue
         $this->python();
         $this->uploadConvertedAnnotations();
         $this->cleanupJob();
+        $this->user->notify(new PtpJobConcluded($this->volumeName));
     }
 
     /**
@@ -206,6 +211,7 @@ class PtpJob extends BaseJob implements ShouldQueue
     public function failed(?Throwable $exception): void
     {
         $this->cleanupJob();
+        $this->user->notify(new PtpJobFailed($this->volumeName));
     }
 
     /**
