@@ -47,12 +47,32 @@ class PtpJobTest extends TestCase
 
     private function setUpAnnotations()
     {
-
         $this->imageAnnotation = ImageAnnotation::factory()->create([
             'image_id' => $this->image->id,
             'shape_id' => Shape::pointId(),
             'points' => [0,0],
         ]);
+
+        $this->label = Label::factory()->create();
+
+        $this->imageAnnotationLabel = ImageAnnotationLabel::factory()->create([
+            'annotation_id' => $this->imageAnnotation->id,
+            'label_id' => $this->label->id,
+            'user_id' => $this->user->id,
+        ]);
+
+        //Add an annotation that is not a point annotation to check that it is filtered out
+        $fakeAnnotation = ImageAnnotation::factory()->create([
+            'image_id' => $this->image->id,
+            'points' => [0,0,1,2,3,4,5],
+        ]);
+
+        ImageAnnotationLabel::factory()->create([
+            'annotation_id' => $fakeAnnotation->id,
+            'label_id' => $this->label->id,
+            'user_id' => $this->user->id,
+        ]);
+
 
         $this->label = Label::factory()->create();
 
