@@ -2,7 +2,7 @@
     <div class="ptp-container">
         <form class="form-stacked">
             <div class="form-group">
-                <h4>Create a new Point to Polygon job  <span class="label label-warning">experimental</span></h4>
+                <h4>Create a new Point to Polygon job <small><span class="label label-warning">experimental</span></small></h4>
                 <span>Run the point to polygon transformation using Magic SAM</span><br>
             </div>
             <div class="form-group">
@@ -13,7 +13,7 @@
 </template>
 <script>
 import PtpJobApi from './api/ptpJob'
-import {Messages} from './import'
+import {handleErrorResponse, Messages} from './import'
 
 
 export default {
@@ -26,6 +26,7 @@ export default {
    methods: {
         sendPtpRequest() {
             PtpJobApi.save({id: this.volumeId}, {})
+                .then(makeButtonDisabled, handleErrorResponse)
                 .catch(
                     (error) => {
                         if (error.status == 400){
