@@ -12,7 +12,6 @@ use Biigle\Label;
 use Biigle\User;
 use Biigle\Volume;
 use Ramsey\Uuid\Uuid;
-use Storage;
 use TestCase;
 
 
@@ -62,24 +61,18 @@ class PtpJobTest extends TestCase
         ]);
 
         //Add an annotation that is not a point annotation to check that it is filtered out
-        $fakeAnnotation = ImageAnnotation::factory()->create([
+        $this->fakeAnnotation = ImageAnnotation::factory()->create([
             'image_id' => $this->image->id,
+            'shape_id' => Shape::polygonId(),
             'points' => [0,0,1,2,3,4,5],
         ]);
 
+        $fakeLabel = Label::factory()->create();
+
         ImageAnnotationLabel::factory()->create([
-            'annotation_id' => $fakeAnnotation->id,
-            'label_id' => $this->label->id,
-            'user_id' => $this->user->id,
-        ]);
-
-
-        $this->label = Label::factory()->create();
-
-        $this->imageAnnotationLabel = ImageAnnotationLabel::factory()->create([
-            'annotation_id' => $this->imageAnnotation->id,
-            'label_id' => $this->label->id,
-            'user_id' => $this->user->id,
+            'annotation_id' => $this->fakeAnnotation->id,
+            'label_id' => $fakeLabel->id,
+            'user_id' => $this->user2->id,
         ]);
 
         $this->inputFileContents = [
@@ -95,7 +88,7 @@ class PtpJobTest extends TestCase
     public function testPtpHandle(): void
     {
         //Test that the PTP job handle correctly calls the handle, succedes and cleans up the volume
-        $job = new MockPtpJob($this->volume->id, $this->inputFile, $this->outputFile, $this->user, $this->uuid);
+        $job = new MockPtpJob($this->volume->id, $this->volume->name, $this->inputFile, $this->outputFile, $this->user, $this->uuid);
         try {
             file_put_contents(config('ptp.temp_dir').'/'.$this->outputFile, '[]');
             $this->setUpAnnotations();
@@ -111,12 +104,12 @@ class PtpJobTest extends TestCase
 
     public function testPtpGenerateInputFile(): void
     {
-        $job = new MockPtpJob($this->volume->id, $this->inputFile, $this->outputFile, $this->user, $this->uuid);
+        $job = new MockPtpJob($this->volume->id, $this->volume->name, $this->inputFile, $this->outputFile, $this->user, $this->uuid);
         try {
             $this->setUpAnnotations();
             $job->generateInputFile();
             $json = json_decode(file_get_contents(config('ptp.temp_dir').'/'.$this->inputFile.'.json'), true);
-            $this->assertEquals($json, $this->inputFileContents);
+            $this->assertEquals($this->inputFileContents, $json);
         } finally {
             unlink(config('ptp.temp_dir').'/'.$this->inputFile.'.json');
         }
@@ -124,7 +117,7 @@ class PtpJobTest extends TestCase
 
     public function testPtpGenerateImageInputFile(): void
     {
-        $job = new MockPtpJob($this->volume->id, $this->inputFile, $this->outputFile, $this->user, $this->uuid);
+        $job = new MockPtpJob($this->volume->id, $this->volume->name, $this->inputFile, $this->outputFile, $this->user, $this->uuid);
         try {
             $job->generateImageInputFile(['testPath'], [$this->image]);
             $json = json_decode(file_get_contents(config('ptp.temp_dir').'/'.$this->inputFile.'_images.json'), true);
@@ -137,10 +130,9 @@ class PtpJobTest extends TestCase
     public function testPtpPythonFailed(): void
     {
         //Here we test that the real python script is called, fails and the PTP job is cleared
-        $volume = Volume::where('id', $this->volume->id)->first();
         $this->expectException(PythonException::class);
         $this->setUpAnnotations();
-        $job = new PtpJob($this->volume->id, $this->inputFile, $this->outputFile, $this->user, $this->uuid);
+        $job = new PtpJob($this->volume->id, $this->volume->name, $this->inputFile, $this->outputFile, $this->user, $this->uuid);
         config(['ptp.python' => 'fake']);
         try {
             $job->handle();
@@ -157,7 +149,7 @@ class PtpJobTest extends TestCase
     public function testPtpUploadedAnnotations(): void
     {
         //Test that annotations are correctly uploaded by the uploadAnnotations method
-        $job = new MockPtpJob($this->volume->id, $this->inputFile, $this->outputFile, $this->user2, $this->uuid);
+        $job = new MockPtpJob($this->volume->id, $this->volume->name, $this->inputFile, $this->outputFile, $this->user2, $this->uuid);
         $this->setUpAnnotations();
         try {
             $outputFileContent = [[
@@ -168,7 +160,13 @@ class PtpJobTest extends TestCase
             file_put_contents(config('ptp.temp_dir').'/'.$this->outputFile, json_encode($outputFileContent));
             $job->uploadConvertedAnnotations();
 
-            $imageAnnotationValues = ImageAnnotation::where('image_id', $this->image->id)->whereNot('id', $this->imageAnnotation->id)->select('id', 'points', 'image_id', 'shape_id')->first()->toArray();
+            $imageAnnotationValues = ImageAnnotation::where('image_id', $this->image->id)
+                ->whereNotIn('id', [$this->imageAnnotation->id, $this->fakeAnnotation->id])
+                ->select('id', 'points', 'image_id', 'shape_id')
+                ->latest()
+                ->first()
+                ->toArray();
+
             $expectedValue = [
                 'id' => $imageAnnotationValues['id'],
                 'points' => [1,2,3,4,5,6],
