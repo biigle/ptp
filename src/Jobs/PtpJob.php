@@ -103,7 +103,6 @@ class PtpJob extends BaseJob implements ShouldQueue
             mkdir(dirname($this->tmpInputFile), recursive:true);
         }
 
-
         file_put_contents($this->tmpInputFile, $jsonData);
         return $imageAnnotationArray;
     }
