@@ -8,7 +8,7 @@ use Biigle\Shape;
 use Biigle\Volume;
 use Illuminate\Http\Request;
 use Ramsey\Uuid\Uuid;
-use Storage;
+
 /**
  * Controller used for creating a PTP Job Chain
  */
