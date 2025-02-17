@@ -11,7 +11,7 @@
                   type="button"
                   title="Run Point to Polygon conversion on this volume"
                   @click="sendPtpRequest"
-                  disabled="{{ this.isRunning }}">
+                  :disabled="this.isRunning">
                   Submit
               </button>
             </div>
@@ -28,18 +28,22 @@ export default {
         return {
             volumeId: biigle.$require('volumes.volumeId'),
             selectedLabel: null,
+            isRunning: false,
         }
   },
+
   created(){
-    this.isRunning = biigle.$require('volumes.ptpJobId') !== null;
+    this.isRunning = biigle.$require('volumes.isRunning');
   },
+
   methods: {
-        makeButtonDisabled(){
+        makeButtonDisabled() {
             this.isRunning = true;
         },
+
         sendPtpRequest() {
             PtpJobApi.save({id: this.volumeId}, {})
-                .then(makeButtonDisabled, handleErrorResponse)
+                .then(this.makeButtonDisabled, handleErrorResponse)
                 .catch(
                     (error) => {
                         if (error.status == 400){
