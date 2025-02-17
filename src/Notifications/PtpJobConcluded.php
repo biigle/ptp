@@ -37,7 +37,7 @@ class PtpJobConcluded extends Notification
         $settings = config('ptp.notifications.default_settings');
 
         if (config('ptp.notifications.allow_user_settings') === true) {
-            $settings = $notifiable->getSettings('report_notifications', $settings);
+            $settings = $notifiable->getSettings('ptp_notifications', $settings);
         }
 
         if ($settings === 'web') {
@@ -57,7 +57,7 @@ class PtpJobConcluded extends Notification
     {
         $message = (new MailMessage)
             ->subject('Your Point To Polygon conversion Job has concluded succesfully')
-            ->line("The Point To Polygon conversion for volume $this->volume has concluded succesfully.");
+            ->line("The Point To Polygon conversion for volume $this->volume has concluded successfully.");
 
         return $message;
     }
@@ -72,7 +72,7 @@ class PtpJobConcluded extends Notification
     {
         $array = [
             'title' => 'Your Point To Polygon conversion Job has concluded succesfully',
-            'message' => "The Point To Polygon conversion for volume $this->volume has concluded succesfully.",
+            'message' => "The Point To Polygon conversion for volume $this->volume has concluded successfully.",
         ];
 
         return $array;

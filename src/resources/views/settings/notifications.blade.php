@@ -2,7 +2,7 @@
 <p class="text-muted">
     Notifications when the state of one of your Point to Polygon jobs concludes.
 </p>
-<form id="maia-notification-settings">
+<form id="ptp-notification-settings">
     <div class="form-group">
         <label class="radio-inline">
             <input type="radio" v-model="settings" value="email"> <strong>Email</strong>

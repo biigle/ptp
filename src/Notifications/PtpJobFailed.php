@@ -37,7 +37,7 @@ class PtpJobFailed extends Notification
         $settings = config('ptp.notifications.default_settings');
 
         if (config('ptp.notifications.allow_user_settings') === true) {
-            $settings = $notifiable->getSettings('report_notifications', $settings);
+            $settings = $notifiable->getSettings('ptp_notifications', $settings);
         }
 
         if ($settings === 'web') {
