@@ -71,7 +71,7 @@ return [
 
     'notifications' => [
         /*
-        | Set the way notifications for MAIA job state changes are sent by default.
+        | Set the way notifications for PTP job state changes are sent by default.
         |
         | Available are: "email", "web"
         */
