@@ -24,18 +24,25 @@ use Throwable;
 class PtpJob extends BaseJob implements ShouldQueue
 {
     use Batchable, InteractsWithQueue, Queueable, SerializesModels;
+    /**
+     *
+     * @var string $tmpInputFile File where the input data for the Python script will be kept
+     * @var string $tmpImageInputFile File where the image input data for the Python script will be kept
+     * @var int $insertChunkSize Number of annotations to be inserted per chunk
+     *
+     */
     private string $tmpInputFile;
     private string $tmpImageInputFile;
-    public static $insertChunkSize = 5000;
+    public static int $insertChunkSize = 5000;
     /**
      * Job used for converting Point annotations to Polygons
      *
-     * @var $volumeId Id of the volume for the PTP Job
-     * @var $volumeName Name of the volume for the PTP Job
-     * @var $outputFile File that will contain the resulting conversions
-     * @var $inputFile Input JSON file containing the annotations to convert
-     * @var $user User starting the PtpJob
-     * @var $id Uuid associated to the job
+     * @param int $volumeId Id of the volume for the PTP Job
+     * @param string $volumeName Name of the volume for the PTP Job
+     * @param string $outputFile File that will contain the resulting conversions
+     * @param string $inputFile Input JSON file containing the annotations to convert
+     * @param User $user User starting the PtpJob
+     * @param string $id Uuid associated to the job
      *
      */
     public function __construct(
