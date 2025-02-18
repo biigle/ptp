@@ -48,7 +48,7 @@ return [
     */
     'device' => env('PTP_DEVICE', 'cpu'),
 
-/*
+    /*
     | Path to store the model checkpoint to.
     */
     'model_path' => storage_path('ptp').'/sam_checkpoint.pth',
