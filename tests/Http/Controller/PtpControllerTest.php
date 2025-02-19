@@ -138,6 +138,9 @@ class PtpControllerTest extends ApiTestCase
                      ->etc()
         );
 
+        //$this->volume does not update with attrs
+        $volume = Volume::where('id', $this->volume()->id)->first();
+
         $this->assertFalse(isset($volume->attrs['ptp_job_id']));
     }
 }
