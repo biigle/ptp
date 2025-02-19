@@ -240,6 +240,13 @@ class PtpJob extends BaseJob implements ShouldQueue
         $this->insertAnnotationChunk($file, $insertAnnotations, $insertAnnotationLabels);
     }
 
+    /**
+     * Insert chunk of annotations in the DB
+     *
+     * @param  $file VolumeFile to upload annotations to
+     * @param  $annotations Annotations to upload
+     * @param  $annotationLabels Annotation labels to upload
+     */
     protected function insertAnnotationChunk(
         VolumeFile $file,
         array $annotations,
@@ -256,16 +263,14 @@ class PtpJob extends BaseJob implements ShouldQueue
             ->values()
             ->toArray();
 
-        foreach ($ids as $index => $id) {
-            foreach ($annotationLabels as &$annotationLabel) {
-                $annotationLabel['annotation_id'] = $id;
-                $annotationLabel['confidence'] = 1.0;
-            }
+        foreach ($annotationLabels as $idx => &$annotationLabel) {
+            $annotationLabel['annotation_id'] = $ids[$idx];
+            $annotationLabel['confidence'] = 1.0;
         }
 
         // Flatten. Use array_values to prevent accidental array unpacking with string
         // keys (which makes the linter complain).
-        $annotationLabels = array_merge(...array_values($annotationLabels));
+        $annotationLabels = array_values($annotationLabels);
 
         ImageAnnotationLabel::insert($annotationLabels);
     }
