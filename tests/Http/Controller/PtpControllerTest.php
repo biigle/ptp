@@ -8,6 +8,7 @@ use Biigle\ImageAnnotation;
 use Biigle\MediaType;
 use Biigle\Shape;
 use Biigle\Volume;
+use Exception;
 use Illuminate\Testing\Fluent\AssertableJson;
 
 class PtpControllerTest extends ApiTestCase
@@ -46,8 +47,6 @@ class PtpControllerTest extends ApiTestCase
         ]);
 
         $url = '/api/v1/send-ptp-job/'.$this->volume()->id;
-
-        config(['ptp.ptp_storage_disk' => 'test']);
 
         $this->beEditor();
         $this->postJson($url)->assertStatus(200);
@@ -103,7 +102,6 @@ class PtpControllerTest extends ApiTestCase
                 $json->where('message', 'Point to polygon conversion cannot be executed on this volume!')
                      ->etc()
         );
-;
     }
 
     public function testNoImageAnnotations()
@@ -117,7 +115,30 @@ class PtpControllerTest extends ApiTestCase
                 $json->where('message', 'No point annotations to convert!')
                      ->etc()
         );
-;
+    }
+
+    public function testBadJobGenerated()
+    {
+        //Test that if a bad job is generated a job ID is not present
+        $image = Image::factory()->create(['volume_id' => $this->volume()->id]);
+
+        $imageAnnotation = ImageAnnotation::factory()->create([
+            'image_id' => $image->id,
+            'shape_id' => Shape::pointId(),
+        ]);
+        $this->beEditor();
+        config(['ptp.ptp_fail_construct' => true]);
+        config(['ptp.ptp_storage_disk' => 'test']);
+
+        $url = '/api/v1/send-ptp-job/'.$this->volume()->id;
+
+        $this->postJson($url)->assertStatus(400)->assertJson(
+            fn (AssertableJson $json) =>
+                $json->where('message', 'Unable to create Point To Polygon conversion job!')
+                     ->etc()
+        );
+
+        $this->assertFalse(isset($volume->attrs['ptp_job_id']));
     }
 }
 

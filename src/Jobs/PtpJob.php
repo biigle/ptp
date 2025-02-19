@@ -1,5 +1,7 @@
 <?php
+
 namespace Biigle\Modules\Ptp\Jobs;
+
 use Biigle\Jobs\Job as BaseJob;
 use Biigle\Image;
 use Biigle\ImageAnnotation;
@@ -24,6 +26,7 @@ use Throwable;
 class PtpJob extends BaseJob implements ShouldQueue
 {
     use Batchable, InteractsWithQueue, Queueable, SerializesModels;
+
     /**
      *
      * @var string $tmpInputFile File where the input data for the Python script will be kept
@@ -34,6 +37,7 @@ class PtpJob extends BaseJob implements ShouldQueue
     private string $tmpInputFile;
     private string $tmpImageInputFile;
     public static int $insertChunkSize = 5000;
+
     /**
      * Job used for converting Point annotations to Polygons
      *
@@ -54,6 +58,10 @@ class PtpJob extends BaseJob implements ShouldQueue
         public string $id,
     )
     {
+        if (config('ptp.ptp_fail_construct') && config('ptp.ptp_storage_disk') == 'test') {
+            throw new Exception("Error!");
+        }
+
         $this->volumeId = $volumeId;
         $this->volumeName = $volumeName;
         $this->outputFile = config('ptp.temp_dir').'/'.$outputFile;
@@ -128,7 +136,6 @@ class PtpJob extends BaseJob implements ShouldQueue
         return $imageAnnotationArray;
     }
 
-    //TODO: test if i can generate image input file here
     /**
      *
      *
@@ -138,6 +145,7 @@ class PtpJob extends BaseJob implements ShouldQueue
     public function generateImageInputFile(array $paths, array $images): void
     {
         $imagePathInput = [];
+
         //Create input file with images
         for ($i = 0, $size = count($paths); $i < $size; $i++){
             $imagePathInput[$images[$i]->id] = $paths[$i];
@@ -170,6 +178,7 @@ class PtpJob extends BaseJob implements ShouldQueue
         } else if (file_exists($this->outputFile)){
             unlink($this->outputFile);
         }
+
 
         $command = "{$python} -u {$script} --image-paths-file {$this->tmpImageInputFile} --input-file {$this->tmpInputFile} --device {$device} --model-type {$modelType} --model-path {$modelPath} --output-file {$this->outputFile} ";
 

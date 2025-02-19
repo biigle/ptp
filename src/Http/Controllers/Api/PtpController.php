@@ -6,6 +6,7 @@ use Biigle\Modules\Ptp\Jobs\PtpJob;
 use Biigle\ImageAnnotation;
 use Biigle\Shape;
 use Biigle\Volume;
+use Exception;
 use Illuminate\Http\Request;
 use Ramsey\Uuid\Uuid;
 
@@ -20,10 +21,9 @@ class PtpController extends Controller
      * @var bool
      */
     protected $deleteWhenMissingModels = true;
+
     /**
-     * Generate Point to Polygon Job.
-     * This method generates, based on the request. The jobs generated are first for computing and uploading the expected areas of converted polygons.
-     * Then, it generates a job for executing the conversion and then upload the new annotations to the DB
+     * Generate Point to Polygon Job for the specified volume
      *
      * @param  $request
      * @param $volumeId
@@ -42,7 +42,7 @@ class PtpController extends Controller
             abort(400, 'Another point to polygon conversion job is running in this volume!');
         }
 
-        $pointShapeId = Shape::pointId(); //Find annotations with selected label in desired volume
+        $pointShapeId = Shape::pointId();
         $annotationsCount = ImageAnnotation::join('images','image_annotations.image_id', '=','images.id')
             ->where('images.volume_id', $volumeId)
             ->where('image_annotations.shape_id', $pointShapeId)
@@ -58,14 +58,22 @@ class PtpController extends Controller
         $outputFile = 'ptp/'.$volume->id.'_converted_annotations.json';
 
         $id = $this->setUniquePtpJob($volume);
-
-        PtpJob::dispatch($volume->id, $volume->name, $inputFile, $outputFile, $request->user(), $id);
+        try {
+            PtpJob::dispatch($volume->id, $volume->name, $inputFile, $outputFile, $request->user(), $id);
+        } catch (Exception $e) {
+            // If unable to dispatch a PTP Job, reset the PTP Job ID
+            $attrs = $volume->attrs;
+            unset($attrs['ptp_job_id']);
+            $volume->attrs = $attrs;
+            $volume->save();
+            abort(400, 'Unable to create Point To Polygon conversion job!');
+        }
     }
 
     /**
     *
     * Assign UUID to a volume for the PTP job so that only one job is run per volume at a time.
-    * @var Volume $volume Volume where the PTP job is executed
+    * @param Volume $volume Volume where the PTP job is executed
     *
     **/
     public function setUniquePtpJob(Volume $volume): string
