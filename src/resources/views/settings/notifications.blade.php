@@ -25,7 +25,7 @@
     biigle.$mount('ptp-notification-settings', {
         mixins: [biigle.$require('core.mixins.notificationSettings')],
         data: {
-            settings: '{!! $user->getSettings('ptp_notifications', config('user_storage.notifications.default_settings')) !!}',
+            settings: '{!! $user->getSettings('ptp_notifications', config('ptp.notifications.default_settings')) !!}',
             settingsKey: 'ptp_notifications',
         },
     });
