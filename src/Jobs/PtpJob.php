@@ -214,7 +214,7 @@ class PtpJob extends BaseJob implements ShouldQueue
                 ->first()
                 ->replicate();
 
-            if (is_null($file)){
+            if (is_null($file)) {
                 $file = $newAnnotation->getFile();
             }
             $newAnnotation =  $newAnnotation->toArray();
