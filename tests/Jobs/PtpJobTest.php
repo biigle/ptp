@@ -143,8 +143,6 @@ class PtpJobTest extends TestCase
         config(['ptp.python' => 'fake']);
         try {
             $job->handle();
-        } catch(Exception $e) {
-            throw ($e);
         } finally {
             unlink(config('ptp.temp_dir').'/'.$this->inputFile.'.json');
             unlink(config('ptp.temp_dir').'/'.$this->inputFile.'_images.json');
