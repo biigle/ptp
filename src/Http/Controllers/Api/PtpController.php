@@ -48,7 +48,7 @@ class PtpController extends Controller
             ->where('image_annotations.shape_id', $pointShapeId)
             ->count();
 
-        if ($annotationsCount == 0){
+        if ($annotationsCount === 0) {
             abort(400, 'No point annotations to convert!');
         }
 
