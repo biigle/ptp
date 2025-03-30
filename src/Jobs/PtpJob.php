@@ -120,7 +120,7 @@ class PtpJob extends BaseJob implements ShouldQueue
             ->where('images.volume_id', $this->volumeId)
             ->where('image_annotations.shape_id', $pointShapeId)
             ->select('image_annotations.id as id', 'images.id as image_id', 'image_annotations.points as points','image_annotations.shape_id as shape_id', 'image_annotation_labels.label_id as label_id')
-            ->get();
+            ->lazy();
 
 
         foreach ($annotations as $annotation) {
