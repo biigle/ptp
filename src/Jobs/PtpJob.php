@@ -80,12 +80,12 @@ class PtpJob extends BaseJob implements ShouldQueue
     {
         $callback = function ($images, $paths){
             $this->generateImageInputFile($paths,  $images);
+            $this->python();
         };
         $imageData = $this->generateInputFile();
         $imageIds = array_keys($imageData);
         $images = Image::whereIn('id', $imageIds)->get()->all();
         FileCache::batch($images, $callback);
-        $this->python();
         $this->uploadConvertedAnnotations();
         $this->cleanupJob();
         $this->user->notify(new PtpJobConcluded($this->volumeName));
