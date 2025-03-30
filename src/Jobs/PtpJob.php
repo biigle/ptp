@@ -101,8 +101,8 @@ class PtpJob extends BaseJob implements ShouldQueue
         $images = Image::whereIn('id', $imageIds)->get()->all();
         FileCache::batch($images, $callback);
         $this->uploadConvertedAnnotations();
-        $this->cleanupJob();
         $this->user->notify(new PtpJobConcluded($this->volumeName));
+        $this->cleanupJob();
     }
 
     /**
@@ -311,8 +311,8 @@ class PtpJob extends BaseJob implements ShouldQueue
      */
     public function failed(?Throwable $exception): void
     {
-        $this->cleanupJob();
         $this->user->notify(new PtpJobFailed($this->volumeName));
+        $this->cleanupJob();
     }
 
     /**
