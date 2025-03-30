@@ -100,7 +100,7 @@ class PtpJob extends BaseJob implements ShouldQueue
     {
         $imageAnnotationArray = [];
 
-        $pointShapeId = Shape::pointId(); //Find annotations with selected label in desired volume
+        $pointShapeId = Shape::pointId();
         $annotations = ImageAnnotation::join('image_annotation_labels','image_annotations.id', '=', 'image_annotation_labels.annotation_id')
             ->join('images','image_annotations.image_id', '=','images.id')
             ->where('images.volume_id', $this->volumeId)
@@ -214,7 +214,7 @@ class PtpJob extends BaseJob implements ShouldQueue
                 ->first()
                 ->replicate();
 
-            if (is_null($file)){
+            if (is_null($file)) {
                 $file = $newAnnotation->getFile();
             }
             $newAnnotation =  $newAnnotation->toArray();

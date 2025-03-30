@@ -101,8 +101,6 @@ class PtpJobTest extends TestCase
             $this->assertTrue($job->pythonCalled);
             $volume = Volume::where('id', $this->volume->id)->first();
             $this->assertFalse(isset($volume->attrs['ptp_job_id']));
-        } catch(Exception $e) {
-            throw ($e);
         } finally {
             unlink(config('ptp.temp_dir').'/'.$this->inputFile.'.json');
             unlink(config('ptp.temp_dir').'/'.$this->inputFile.'_images.json');
@@ -143,8 +141,6 @@ class PtpJobTest extends TestCase
         config(['ptp.python' => 'fake']);
         try {
             $job->handle();
-        } catch(Exception $e) {
-            throw ($e);
         } finally {
             unlink(config('ptp.temp_dir').'/'.$this->inputFile.'.json');
             unlink(config('ptp.temp_dir').'/'.$this->inputFile.'_images.json');

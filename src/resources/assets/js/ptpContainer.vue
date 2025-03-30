@@ -11,7 +11,7 @@
                   type="button"
                   title="Run Point to Polygon conversion on this volume"
                   @click="sendPtpRequest"
-                  :disabled="this.isRunning">
+                  :disabled="isRunning">
                   Submit
               </button>
             </div>
