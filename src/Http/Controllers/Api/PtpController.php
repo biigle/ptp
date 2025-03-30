@@ -35,7 +35,7 @@ class PtpController extends Controller
         $this->authorize('edit-in', $volume);
 
         if (!$volume->isImageVolume() || $volume->hasTiledImages()){
-            abort(400, 'Point to polygon conversion cannot be executed on this volume!');
+            abort(400, 'The point to polygon conversion cannot be executed on video volumes or volumes with very large images.');
         }
 
         if (is_array($volume->attrs) && array_key_exists('ptp_job_id', $volume->attrs)) {

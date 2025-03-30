@@ -7,6 +7,7 @@ use Biigle\Image;
 use Biigle\ImageAnnotation;
 use Biigle\MediaType;
 use Biigle\Shape;
+use Biigle\Tests\Modules\Ptp\Jobs\PtpJobTest;
 use Biigle\Volume;
 use Exception;
 use Illuminate\Testing\Fluent\AssertableJson;
@@ -74,7 +75,7 @@ class PtpControllerTest extends ApiTestCase
 
         $this->postJson($url)->assertStatus(400)->assertJson(
             fn (AssertableJson $json) =>
-                $json->where('message', 'Point to polygon conversion cannot be executed on this volume!')
+                $json->where('message', 'The point to polygon conversion cannot be executed on video volumes or volumes with very large images.')
                      ->etc()
         );
     }
@@ -99,7 +100,7 @@ class PtpControllerTest extends ApiTestCase
 
         $this->postJson($url)->assertStatus(400)->assertJson(
             fn (AssertableJson $json) =>
-                $json->where('message', 'Point to polygon conversion cannot be executed on this volume!')
+                $json->where('message', 'The point to polygon conversion cannot be executed on video volumes or volumes with very large images.')
                      ->etc()
         );
     }
