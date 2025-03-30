@@ -28,15 +28,29 @@ class PtpJob extends BaseJob implements ShouldQueue
     use Batchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /**
-     *
-     * @var string $tmpInputFile File where the input data for the Python script will be kept
-     * @var string $tmpImageInputFile File where the image input data for the Python script will be kept
-     * @var int $insertChunkSize Number of annotations to be inserted per chunk
-     *
+     * File where the input data for the Python script will be kept
+     * @var string
      */
     private string $tmpInputFile;
+
+    /**
+     * File where the image input data for the Python script will be kept
+     * @var string
+     */
     private string $tmpImageInputFile;
+
+    /**
+     * Number of annotations to be inserted per chunk
+     * @var int
+     */
     public static int $insertChunkSize = 5000;
+
+    /**
+     * Ignore this job if the project or volume does not exist any more.
+     *
+     * @var bool
+     */
+    protected $deleteWhenMissingModels = true;
 
     /**
      * Job used for converting Point annotations to Polygons

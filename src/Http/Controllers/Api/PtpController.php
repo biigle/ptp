@@ -16,13 +16,6 @@ use Ramsey\Uuid\Uuid;
 class PtpController extends Controller
 {
     /**
-     * Ignore this job if the project or volume does not exist any more.
-     *
-     * @var bool
-     */
-    protected $deleteWhenMissingModels = true;
-
-    /**
      * Generate Point to Polygon Job for the specified volume
      *
      * @param  $request
