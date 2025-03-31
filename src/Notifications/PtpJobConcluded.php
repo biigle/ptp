@@ -13,7 +13,7 @@ class PtpJobConcluded extends Notification
      *
      * @var
      */
-    protected $volume;
+    protected $volumeName;
 
     /**
      * Create a new notification instance.
@@ -21,9 +21,9 @@ class PtpJobConcluded extends Notification
      * @param Report $report
      * @return void
      */
-    public function __construct(string $volume)
+    public function __construct(string $volumeName)
     {
-        $this->volume = $volume;
+        $this->volumeName = $volumeName;
     }
 
     /**
@@ -57,7 +57,7 @@ class PtpJobConcluded extends Notification
     {
         $message = (new MailMessage)
             ->subject('Your Point To Polygon conversion Job has concluded succesfully')
-            ->line("The Point To Polygon conversion for volume $this->volume has concluded successfully.");
+            ->line("The Point To Polygon conversion for volume $this->volumeName has concluded successfully.");
 
         return $message;
     }
