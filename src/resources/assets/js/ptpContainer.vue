@@ -52,14 +52,7 @@ export default {
 
         sendPtpRequest() {
             PtpJobApi.save({id: this.volumeId}, {})
-                .then(this.makeButtonDisabled, handleErrorResponse)
-                .catch(
-                    (error) => {
-                        if (error.status == 400) {
-                            Messages.danger(error.body['message'])
-                        }
-                    }
-                );
+                .then(this.makeButtonDisabled, handleErrorResponse);
         }
     }
 }
