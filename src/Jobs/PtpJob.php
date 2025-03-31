@@ -104,9 +104,9 @@ class PtpJob extends BaseJob implements ShouldQueue
     }
 
     /**
-     * Generate the input Job File
+     * Generate the input File containing data for the execution of the job
      *
-     * @return
+     * @return array
      */
     public function generateInputFile(): array
     {
@@ -148,10 +148,10 @@ class PtpJob extends BaseJob implements ShouldQueue
     }
 
     /**
+     * Generate the input file containing image id and path data
      *
-     *
-     * @param  $paths
-     * @param  $images
+     * @param array $paths Array containing the paths to the images.
+     * @param array $images Array containing the images
      */
     public function generateImageInputFile(array $paths, array $images): void
     {
@@ -168,8 +168,6 @@ class PtpJob extends BaseJob implements ShouldQueue
     /**
      * Run the python script for Point to Polygon conversion
      *
-     * @param  $paths The paths where the images is found
-     * @param  $images Array of images
      */
     protected function python(): void
     {
@@ -253,9 +251,9 @@ class PtpJob extends BaseJob implements ShouldQueue
     /**
      * Insert chunk of annotations in the DB
      *
-     * @param  $file VolumeFile to upload annotations to
-     * @param  $annotations Annotations to upload
-     * @param  $annotationLabels Annotation labels to upload
+     * @param VolumeFile $file VolumeFile to upload annotations to
+     * @param array $annotations Annotations to upload
+     * @param array $annotationLabels Annotation labels to upload
      */
     protected function insertAnnotationChunk(
         VolumeFile $file,
