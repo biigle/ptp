@@ -6,7 +6,7 @@
 @push('scripts')
     <script src="{{ cachebust_asset('vendor/ptp/scripts/main.js') }}"></script>
     <script type="text/javascript">
-        biigle.$declare('volumes.isRunning', {{ isset($volume->attrs['ptp_job_id']) }} );
+        biigle.$declare('volumes.isRunning', {{ isset($volume->attrs['ptp_job_id']) ? 'true' : 'false' }} );
     </script>
 @endpush
 
