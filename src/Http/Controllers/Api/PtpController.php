@@ -36,12 +36,12 @@ class PtpController extends Controller
         }
 
         $pointShapeId = Shape::pointId();
-        $annotationsCount = ImageAnnotation::join('images','image_annotations.image_id', '=','images.id')
+        $annotationsExist = ImageAnnotation::join('images','image_annotations.image_id', '=','images.id')
             ->where('images.volume_id', $volumeId)
             ->where('image_annotations.shape_id', $pointShapeId)
-            ->count();
+            ->exists();
 
-        if ($annotationsCount === 0) {
+        if (!$annotationsExist) {
             abort(400, 'No point annotations to convert!');
         }
 
