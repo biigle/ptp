@@ -112,7 +112,7 @@ class PtpJob extends BaseJob implements ShouldQueue
 
         $pointShapeId = Shape::pointId();
         $annotations = ImageAnnotation::join('image_annotation_labels','image_annotations.id', '=', 'image_annotation_labels.annotation_id')
-            ->join('images','image_annotations.image_id', '=','images.id')
+            ->join('images','image_annotations.image_id', '=', 'images.id')
             ->where('images.volume_id', $this->volumeId)
             ->where('image_annotations.shape_id', $pointShapeId)
             ->select('image_annotations.id as id', 'images.id as image_id', 'image_annotations.points as points','image_annotations.shape_id as shape_id', 'image_annotation_labels.label_id as label_id')
@@ -132,7 +132,6 @@ class PtpJob extends BaseJob implements ShouldQueue
             ];
         };
 
-        //$inputFile.'.json' will be used for image annotations, $inputFile.'_images.json' for image paths
         $jsonData = json_encode($imageAnnotationArray);
 
         //Create input file with annotations
@@ -203,7 +202,7 @@ class PtpJob extends BaseJob implements ShouldQueue
     /**
      * Upload the converted annotations to the DB
      *
-    **/
+    */
     public function uploadConvertedAnnotations(): void
     {
         $jsonData = json_decode(file_get_contents($this->outputFile), true);
@@ -237,7 +236,6 @@ class PtpJob extends BaseJob implements ShouldQueue
             $insertAnnotationLabels[] = [
                 'label_id' => $annotation['label_id'],
                 'user_id' => $this->user->id,
-                'confidence' => 1.0,
             ];
 
             if ($idx > 0 && ($idx % static::$insertChunkSize) === 0) {
