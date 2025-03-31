@@ -57,28 +57,30 @@ class PtpJob extends BaseJob implements ShouldQueue
      *
      * @param int $volumeId Id of the volume for the PTP Job
      * @param string $volumeName Name of the volume for the PTP Job
-     * @param string $outputFile File that will contain the resulting conversions
-     * @param string $inputFile Input JSON file containing the annotations to convert
      * @param User $user User starting the PtpJob
-     * @param string $id Uuid associated to the job
+     * @param string $jobId Uuid associated to the job
      *
      */
     public function __construct(
         public int $volumeId,
         public string $volumeName,
-        public string $inputFile,
-        public string $outputFile,
         public User $user,
-        public string $id,
+        public string $jobId,
     )
     {
         $this->volumeId = $volumeId;
         $this->volumeName = $volumeName;
+
+        //$inputFile.'.json' will be used for image annotations, $inputFile.'_images.json' for image paths
+        $inputFile = 'ptp/input-files/'.$volumeId;
+
+        $outputFile = 'ptp/'.$volumeId.'_converted_annotations.json';
+
         $this->outputFile = config('ptp.temp_dir').'/'.$outputFile;
         $this->tmpInputFile = config('ptp.temp_dir').'/'.$inputFile.'.json';
         $this->tmpImageInputFile = config('ptp.temp_dir').'/'.$inputFile.'_images.json';
         $this->user = $user;
-        $this->id = $id;
+        $this->jobId = $jobId;
     }
 
     /**

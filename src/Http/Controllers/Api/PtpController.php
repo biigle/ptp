@@ -45,14 +45,10 @@ class PtpController extends Controller
             abort(400, 'No point annotations to convert!');
         }
 
-        //$inputFile.'.json' will be used for image annotations, $inputFile.'_images.json' for image paths
-        $inputFile = 'ptp/input-files/'.$volume->id;
+        $jobId = $this->setUniquePtpJob($volume);
 
-        $outputFile = 'ptp/'.$volume->id.'_converted_annotations.json';
-
-        $id = $this->setUniquePtpJob($volume);
         try {
-            PtpJob::dispatch($volume->id, $volume->name, $inputFile, $outputFile, $request->user(), $id);
+            PtpJob::dispatch($volume->id, $volume->name, $request->user(), $jobId);
         } catch (Exception $e) {
             // If unable to dispatch a PTP Job, reset the PTP Job ID
             $attrs = $volume->attrs;
