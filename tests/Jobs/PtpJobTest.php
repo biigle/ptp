@@ -34,8 +34,16 @@ class PtpJobTest extends TestCase
             'volume_id' => $this->volume->id,
         ]);
 
-        $this->inputFile = 'test';
-        $this->outputFile = 'testOutput.json';
+        $this->inputFile = config('ptp.temp_dir').'/ptp/input-files/'.$this->volume->id;
+        $this->outputFile = config('ptp.temp_dir').'/'.'ptp/'.$this->volume->id.'_converted_annotations.json';
+
+        if (!file_exists(dirname($this->inputFile))) {
+            mkdir(dirname($this->inputFile), recursive: true);
+        }
+
+        if (!file_exists(dirname($this->outputFile))) {
+            mkdir(dirname($this->outputFile), recursive: true);
+        }
 
         $this->user = User::factory()->create();
         $this->user2 = User::factory()->create();
@@ -88,46 +96,46 @@ class PtpJobTest extends TestCase
     {
         //Test that the PTP job handle correctly calls the handle, succedes and cleans up the volume
         $job = new MockPtpJob(
-            $this->volume->id, $this->volume->name, $this->inputFile, $this->outputFile, $this->user, $this->uuid
+            $this->volume->id, $this->volume->name, $this->user, $this->uuid
         );
 
         $this->expectException(Exception::class);
         $this->expectExceptionMessage('No files converted!');
         try {
-            file_put_contents(config('ptp.temp_dir').'/'.$this->outputFile, '[]');
+            file_put_contents($this->outputFile, '[]');
             $this->setUpAnnotations();
             $job->handle();
             $this->assertTrue($job->pythonCalled);
             $volume = Volume::where('id', $this->volume->id)->first();
             $this->assertFalse(isset($volume->attrs['ptp_job_id']));
         } finally {
-            unlink(config('ptp.temp_dir').'/'.$this->inputFile.'.json');
-            unlink(config('ptp.temp_dir').'/'.$this->inputFile.'_images.json');
+            unlink($this->inputFile.'.json');
+            unlink($this->inputFile.'_images.json');
         }
     }
 
     public function testPtpGenerateInputFile(): void
     {
-        $job = new MockPtpJob($this->volume->id, $this->volume->name, $this->inputFile, $this->outputFile, $this->user, $this->uuid);
+        $job = new MockPtpJob($this->volume->id, $this->volume->name, $this->user, $this->uuid);
         try {
             $this->setUpAnnotations();
             $job->generateInputFile();
-            $json = json_decode(file_get_contents(config('ptp.temp_dir').'/'.$this->inputFile.'.json'), true);
+            $json = json_decode(file_get_contents($this->inputFile.'.json'), true);
             $this->assertEquals($this->inputFileContents, $json);
         } finally {
-            unlink(config('ptp.temp_dir').'/'.$this->inputFile.'.json');
+            unlink($this->inputFile.'.json');
         }
     }
 
     public function testPtpGenerateImageInputFile(): void
     {
-        $job = new MockPtpJob($this->volume->id, $this->volume->name, $this->inputFile, $this->outputFile, $this->user, $this->uuid);
+        $job = new MockPtpJob($this->volume->id, $this->volume->name, $this->user, $this->uuid);
         try {
             $job->generateImageInputFile(['testPath'], [$this->image]);
-            $json = json_decode(file_get_contents(config('ptp.temp_dir').'/'.$this->inputFile.'_images.json'), true);
+            $json = json_decode(file_get_contents($this->inputFile.'_images.json'), true);
             $this->assertEquals($json, [$this->image->id => 'testPath']);
         } finally {
-            unlink(config('ptp.temp_dir').'/'.$this->inputFile.'_images.json');
+            unlink($this->inputFile.'_images.json');
         }
     }
 
@@ -136,13 +144,13 @@ class PtpJobTest extends TestCase
         //Here we test that the real python script is called, fails and the PTP job is cleared
         $this->expectException(PythonException::class);
         $this->setUpAnnotations();
-        $job = new PtpJob($this->volume->id, $this->volume->name, $this->inputFile, $this->outputFile, $this->user, $this->uuid);
+        $job = new PtpJob($this->volume->id, $this->volume->name, $this->user, $this->uuid);
         config(['ptp.python' => 'fake']);
         try {
             $job->handle();
         } finally {
-            unlink(config('ptp.temp_dir').'/'.$this->inputFile.'.json');
-            unlink(config('ptp.temp_dir').'/'.$this->inputFile.'_images.json');
+            unlink($this->inputFile.'.json');
+            unlink($this->inputFile.'_images.json');
         }
         $volume = Volume::where('id', $this->volume->id)->first();
         $this->assertFalse(isset($volume->attrs['ptp_job_id']));
@@ -151,7 +159,7 @@ class PtpJobTest extends TestCase
     public function testPtpUploadedAnnotations(): void
     {
         //Test that annotations are correctly uploaded by the uploadAnnotations method
-        $job = new MockPtpJob($this->volume->id, $this->volume->name, $this->inputFile, $this->outputFile, $this->user2, $this->uuid);
+        $job = new MockPtpJob($this->volume->id, $this->volume->name, $this->user2, $this->uuid);
         $this->setUpAnnotations();
         try {
             $outputFileContent = [[
@@ -159,7 +167,7 @@ class PtpJobTest extends TestCase
                 'annotation_id' => $this->imageAnnotation->id,
                 'label_id' => $this->label->id,
             ]];
-            file_put_contents(config('ptp.temp_dir').'/'.$this->outputFile, json_encode($outputFileContent));
+            file_put_contents($this->outputFile, json_encode($outputFileContent));
             $job->uploadConvertedAnnotations();
 
             $imageAnnotationValues = ImageAnnotation::where('image_id', $this->image->id)
@@ -182,7 +190,7 @@ class PtpJobTest extends TestCase
             $expectedValue = ['label_id' => $this->label->id, 'user_id' => $this->user2->id];
             $this->assertEquals($imageAnnotationLabelValues, $expectedValue);
         } finally {
-            unlink(config('ptp.temp_dir').'/'.$this->outputFile);
+            unlink($this->outputFile);
         }
     }
 }
