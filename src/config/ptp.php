@@ -32,11 +32,6 @@ return [
     'ptp_script' => __DIR__.'/../resources/scripts/ptp.py',
 
     /*
-    | Path to the script that performs PTP conversion.
-    */
-    'ptp_storage_disk' => env('PTP_STORAGE_DISK', 'ptp'),
-
-    /*
     | Path for temporary files
     */
     'temp_dir' => sys_get_temp_dir(),
