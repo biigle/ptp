@@ -72,10 +72,6 @@ class PtpJob extends BaseJob implements ShouldQueue
         public string $id,
     )
     {
-        if (config('ptp.ptp_fail_construct') && config('ptp.ptp_storage_disk') == 'test') {
-            throw new Exception("Error!");
-        }
-
         $this->volumeId = $volumeId;
         $this->volumeName = $volumeName;
         $this->outputFile = config('ptp.temp_dir').'/'.$outputFile;

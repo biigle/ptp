@@ -6,11 +6,13 @@ use ApiTestCase;
 use Biigle\Image;
 use Biigle\ImageAnnotation;
 use Biigle\MediaType;
+use Biigle\Modules\Ptp\Jobs\PtpJob;
 use Biigle\Shape;
-use Biigle\Tests\Modules\Ptp\Jobs\PtpJobTest;
+use Biigle\Tests\Modules\Ptp\Jobs\MockPtpJob;
 use Biigle\Volume;
 use Exception;
 use Illuminate\Testing\Fluent\AssertableJson;
+use Mockery;
 
 class PtpControllerTest extends ApiTestCase
 {
@@ -118,6 +120,13 @@ class PtpControllerTest extends ApiTestCase
         );
     }
 
+    /**
+     * These are required for the Mock to work. See:
+     * https://phpunit.de/manual/6.5/en/appendixes.annotations.html#appendixes.annotations.preserveGlobalState
+     * https://phpunit.de/manual/6.5/en/appendixes.annotations.html#appendixes.annotations.runInSeparateProcess
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
     public function testBadJobGenerated()
     {
         //Test that if a bad job is generated a job ID is not present
@@ -127,8 +136,14 @@ class PtpControllerTest extends ApiTestCase
             'image_id' => $image->id,
             'shape_id' => Shape::pointId(),
         ]);
+
         $this->beEditor();
-        config(['ptp.ptp_fail_construct' => true]);
+
+        $mock = Mockery::mock('overload:Biigle\Modules\Ptp\Jobs\PtpJob')
+            ->shouldReceive('__construct')
+            ->once()
+            ->andThrow(new \Exception('Mocked job failed!'));
+
         config(['ptp.ptp_storage_disk' => 'test']);
 
         $url = '/api/v1/send-ptp-job/'.$this->volume()->id;
