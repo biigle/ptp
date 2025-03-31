@@ -9,7 +9,7 @@
               <button
                   class="btn btn-success btn-block"
                   type="button"
-                  title="Run Point to Polygon conversion on this volume"
+                  :title="ptpButtonTitle"
                   @click="sendPtpRequest"
                   :disabled="isRunning">
                   Submit
@@ -19,8 +19,8 @@
     </div>
 </template>
 <script>
-import PtpJobApi from './api/ptpJob'
-import {handleErrorResponse, Messages} from './import'
+import PtpJobApi from './api/ptpJob';
+import {handleErrorResponse, Messages} from './import';
 
 
 export default {
@@ -34,6 +34,15 @@ export default {
 
     created() {
         this.isRunning = biigle.$require('volumes.isRunning');
+    },
+
+    computed: {
+        ptpButtonTitle() {
+            if (this.isRunning) {
+                return "Another Point to Polygon conversion Job is already running!";
+            }
+            return "Run Point to Polygon conversion on this volume";
+        }
     },
 
     methods: {
