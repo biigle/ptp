@@ -24,19 +24,19 @@ import {handleErrorResponse, Messages} from './import'
 
 
 export default {
-  data() {
+    data() {
         return {
             volumeId: biigle.$require('volumes.volumeId'),
             selectedLabel: null,
             isRunning: false,
         }
-  },
+    },
 
-  created(){
-    this.isRunning = biigle.$require('volumes.isRunning');
-  },
+    created() {
+        this.isRunning = biigle.$require('volumes.isRunning');
+    },
 
-  methods: {
+    methods: {
         makeButtonDisabled() {
             this.isRunning = true;
         },
@@ -46,11 +46,11 @@ export default {
                 .then(this.makeButtonDisabled, handleErrorResponse)
                 .catch(
                     (error) => {
-                        if (error.status == 400){
+                        if (error.status == 400) {
                             Messages.danger(error.body['message'])
                         }
                     }
-            );
+                );
         }
     }
 }

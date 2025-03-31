@@ -40,7 +40,6 @@ class PtpJobTest extends TestCase
         $this->user = User::factory()->create();
         $this->user2 = User::factory()->create();
 
-        config(['ptp.ptp_storage_disk' => 'test']);
         config(['ptp.device' => 'cpu']);
     }
 

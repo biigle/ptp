@@ -25,7 +25,6 @@ class PtpControllerTest extends ApiTestCase
             'image_id' => $image->id,
             'shape_id' => Shape::pointId(),
         ]);
-        config(['ptp.ptp_storage_disk' => 'test']);
 
         $url = '/api/v1/send-ptp-job/'.$this->volume()->id;
 
@@ -143,8 +142,6 @@ class PtpControllerTest extends ApiTestCase
             ->shouldReceive('__construct')
             ->once()
             ->andThrow(new \Exception('Mocked job failed!'));
-
-        config(['ptp.ptp_storage_disk' => 'test']);
 
         $url = '/api/v1/send-ptp-job/'.$this->volume()->id;
 
