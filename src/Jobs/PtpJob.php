@@ -290,7 +290,7 @@ class PtpJob extends BaseJob implements ShouldQueue
     **/
     public function cleanupJob(): void
     {
-        Volume::where('attrs->ptp_job_id', $this->id)->each(function ($volume) {
+        Volume::where('attrs->ptp_job_id', $this->jobId)->each(function ($volume) {
             $attrs = $volume->attrs;
             unset($attrs['ptp_job_id']);
             $volume->attrs = $attrs;
