@@ -20,7 +20,7 @@
 </template>
 <script>
 import PtpJobApi from './api/ptpJob';
-import {handleErrorResponse, Messages} from './import';
+import {handleErrorResponse} from './import';
 
 
 export default {
