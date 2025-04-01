@@ -92,17 +92,16 @@ class PtpJobTest extends TestCase
         ]]];
     }
 
-    public function testPtpHandle(): void
+    public function testPtpHandleWithoutConvertedFiles(): void
     {
-        //Test that the PTP job handle correctly calls the handle, succedes and cleans up the volume
+        //Test that the PTP job correctly calls the handle, fails without converted files and cleans up the volume
         $job = new MockPtpJob(
-            $this->volume->id, $this->volume->name, $this->user, $this->uuid
+            $this->volume->id, $this->volume->name, $this->user, $this->uuid, true, []
         );
 
         $this->expectException(Exception::class);
         $this->expectExceptionMessage('No files converted!');
         try {
-            file_put_contents($this->outputFile, '[]');
             $this->setUpAnnotations();
             $job->handle();
             $this->assertTrue($job->pythonCalled);
@@ -193,15 +192,83 @@ class PtpJobTest extends TestCase
             unlink($this->outputFile);
         }
     }
+
+    public function testPtpSuccessfulHandle(): void
+    {
+        //Test that the PTP job handle is executed correctly from start to finish.
+        $this->setUpAnnotations();
+
+        $outputFileContent = [[
+            'points' => [1,2,3,4,5,6],
+            'annotation_id' => $this->imageAnnotation->id,
+            'label_id' => $this->label->id,
+        ]];
+
+        $job = new MockPtpJob(
+            $this->volume->id, $this->volume->name, $this->user, $this->uuid, true, $outputFileContent
+        );
+
+        try {
+            $job->handle();
+            $this->assertTrue($job->pythonCalled);
+            $volume = Volume::where('id', $this->volume->id)->first();
+            $this->assertFalse(isset($volume->attrs['ptp_job_id']));
+
+            $imageAnnotationValues = ImageAnnotation::where('image_id', $this->image->id)
+                ->whereNotIn('id', [$this->imageAnnotation->id, $this->fakeAnnotation->id])
+                ->select('id', 'points', 'image_id', 'shape_id')
+                ->latest()
+                ->first()
+                ->toArray();
+
+            $expectedValue = [
+                'id' => $imageAnnotationValues['id'],
+                'points' => [1,2,3,4,5,6],
+                'image_id' => $this->image->id,
+                'shape_id' => Shape::polygonId(),
+            ];
+            $this->assertEquals($expectedValue, $imageAnnotationValues);
+
+            $imageAnnotationLabelValues = ImageAnnotationLabel::where('annotation_id', $imageAnnotationValues['id'])->select('label_id', 'user_id')->first()->toArray();
+            $expectedValue = ['label_id' => $this->label->id, 'user_id' => $this->user->id];
+            $this->assertEquals($imageAnnotationLabelValues, $expectedValue);
+        } finally {
+            unlink($this->inputFile.'.json');
+            unlink($this->inputFile.'_images.json');
+            unlink($this->outputFile);
+        }
+    }
+
 }
 
 class MockPtpJob extends PtpJob
 {
     public bool $pythonCalled = false;
 
+    public function __construct(
+        public int $volumeId,
+        public string $volumeName,
+        public User $user,
+        public string $jobId,
+        public bool $generateOutput = false,
+        public array $mockOutputData = [],
+    )
+    {
+        $this->generateOutput = $generateOutput;
+        $this->mockOutputData = $mockOutputData;
+
+        $args = array_slice(func_get_args(), 0, 4, true);
+
+        parent::__construct(...$args);
+    }
+
     protected function python(): void
     {
         $this->pythonCalled = true;
+
+        if ($this->generateOutput) {
+            file_put_contents($this->outputFile, json_encode($this->mockOutputData));
+        }
     }
 }
 
