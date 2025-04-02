@@ -183,7 +183,6 @@ class PtpJob extends BaseJob implements ShouldQueue
         $lines = [];
         $python = config('ptp.python');
         $script = config('ptp.ptp_script');
-        $device = config('ptp.device');
         $modelPath = config('ptp.model_path');
         $modelType = config('ptp.model_type');
         $checkpointUrl = config('ptp.model_url');
