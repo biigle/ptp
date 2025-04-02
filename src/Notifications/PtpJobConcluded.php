@@ -72,7 +72,7 @@ class PtpJobConcluded extends Notification
     {
         $array = [
             'title' => 'Your Point To Polygon conversion Job has concluded succesfully',
-            'message' => "The Point To Polygon conversion for volume $this->volume has concluded successfully.",
+            'message' => "The Point To Polygon conversion for volume $this->volumeName has concluded successfully.",
         ];
 
         return $array;
