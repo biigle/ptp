@@ -12,11 +12,6 @@ return [
     'job_connection' => env('PTP_JOB_CONNECTION', 'gpu'),
 
     /*
-    | Queue to submit PTP feature vector jobs to.
-    */
-    'feature_vector_queue' => env('PTP_FEATURE_VECTOR_QUEUE', env('PTP_JOB_QUEUE', 'default')),
-
-    /*
     | Directory where the temporary files of PTP conversion should be stored.
     */
     'tmp_dir' => env('PTP_TMP_DIR', storage_path('ptp_jobs')),
