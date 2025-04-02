@@ -1,1 +1,1 @@
-export let handleErrorResponse = biigle.$require('messages').handleErrorResponse
+export let handleErrorResponse = biigle.$require('messages').handleErrorResponse;

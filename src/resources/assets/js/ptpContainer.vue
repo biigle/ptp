@@ -29,7 +29,7 @@ export default {
             volumeId: biigle.$require('volumes.volumeId'),
             selectedLabel: null,
             isRunning: false,
-        }
+        };
     },
 
     created() {
