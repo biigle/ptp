@@ -32,13 +32,6 @@ return [
     'temp_dir' => sys_get_temp_dir(),
 
     /*
-    | The device to compute the SAM embedding on.
-    |
-    | Devices: cpu, cuda
-    */
-    'device' => env('PTP_DEVICE', 'cpu'),
-
-    /*
     | Path to store the model checkpoint to.
     */
     'model_path' => storage_path('ptp').'/sam_checkpoint.pth',

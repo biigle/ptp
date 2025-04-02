@@ -195,7 +195,7 @@ class PtpJob extends BaseJob implements ShouldQueue
         }
 
 
-        $command = "{$python} -u {$script} --image-paths-file {$this->tmpImageInputFile} --input-file {$this->tmpInputFile} --device {$device} --model-type {$modelType} --model-path {$modelPath} --output-file {$this->outputFile} ";
+        $command = "{$python} -u {$script} --image-paths-file {$this->tmpImageInputFile} --input-file {$this->tmpInputFile} --model-type {$modelType} --model-path {$modelPath} --output-file {$this->outputFile} ";
 
         exec("$command 2>&1", $lines, $code);
 

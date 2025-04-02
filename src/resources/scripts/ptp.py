@@ -717,12 +717,6 @@ if __name__ == "__main__":
         required=True,
         help="Input file containing the annotations",
     )
-    argparser.add_argument(
-        "--device",
-        type=str,
-        help="Device to use for sam (cpu, cuda, mps)",
-        choices=["cpu", "cuda", "mps"],
-    )
 
     # instance segmentation arguments
     argparser.add_argument("--model-type", type=str, help="Model type")
@@ -745,7 +739,7 @@ if __name__ == "__main__":
     # get the correct sam model and load weights
     sam_model = sam_model_registry[args.model_type](checkpoint=args.model_path)
     # move the model to the correct device
-    sam_model.to(args.device)
+    sam_model.to("cuda")
     # create the sam predictor
     sam = SamPredictor(sam_model)
 
