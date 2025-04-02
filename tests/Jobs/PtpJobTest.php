@@ -163,9 +163,10 @@ class PtpJobTest extends TestCase
         try {
             $outputFileContent = [[
                 'points' => [1,2,3,4,5,6],
-                'annotation_id' => $this->imageAnnotation->id,
+                'image_id' => $this->image->id,
                 'label_id' => $this->label->id,
             ]];
+
             file_put_contents($this->outputFile, json_encode($outputFileContent));
             $job->uploadConvertedAnnotations();
 
@@ -200,7 +201,7 @@ class PtpJobTest extends TestCase
 
         $outputFileContent = [[
             'points' => [1,2,3,4,5,6],
-            'annotation_id' => $this->imageAnnotation->id,
+            'image_id' => $this->image->id,
             'label_id' => $this->label->id,
         ]];
 
@@ -256,10 +257,10 @@ class MockPtpJob extends PtpJob
     {
         $this->generateOutput = $generateOutput;
         $this->mockOutputData = $mockOutputData;
-
         $args = array_slice(func_get_args(), 0, 4, true);
 
         parent::__construct(...$args);
+
     }
 
     protected function python(): void

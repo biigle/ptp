@@ -3,7 +3,6 @@
 namespace Biigle\Modules\Ptp\Jobs;
 
 use Biigle\Jobs\Job as BaseJob;
-use Biigle\Image;
 use Biigle\ImageAnnotation;
 use Biigle\ImageAnnotationLabel;
 use Biigle\Modules\Ptp\Exceptions\PythonException;
@@ -12,7 +11,7 @@ use Biigle\Modules\Ptp\Notifications\PtpJobFailed;
 use Biigle\Shape;
 use Biigle\User;
 use Biigle\Volume;
-use Biigle\VolumeFile;
+use Carbon\Carbon;
 use Exception;
 use File;
 use FileCache;
@@ -38,6 +37,12 @@ class PtpJob extends BaseJob implements ShouldQueue
      * @var string
      */
     private string $tmpImageInputFile;
+
+    /**
+     * File where result data from the Python conversion script will be stored
+     * @var string
+     */
+    protected string $outputFile;
 
     /**
      * Number of annotations to be inserted per chunk
@@ -95,9 +100,7 @@ class PtpJob extends BaseJob implements ShouldQueue
             $this->python();
         };
         $imageData = $this->generateInputFile();
-        $imageIds = array_keys($imageData);
-        $images = Image::whereIn('id', $imageIds)->get()->all();
-        FileCache::batch($images, $callback);
+        FileCache::batch(array_values($imageData), $callback);
         $this->uploadConvertedAnnotations();
         $this->user->notify(new PtpJobConcluded($this->volumeName));
         $this->cleanupJob();
@@ -113,13 +116,16 @@ class PtpJob extends BaseJob implements ShouldQueue
         $imageAnnotationArray = [];
 
         $pointShapeId = Shape::pointId();
+
         $annotations = ImageAnnotation::join('image_annotation_labels','image_annotations.id', '=', 'image_annotation_labels.annotation_id')
             ->join('images','image_annotations.image_id', '=', 'images.id')
             ->where('images.volume_id', $this->volumeId)
             ->where('image_annotations.shape_id', $pointShapeId)
             ->select('image_annotations.id as id', 'images.id as image_id', 'image_annotations.points as points','image_annotations.shape_id as shape_id', 'image_annotation_labels.label_id as label_id')
+            ->with('file')
             ->lazy();
 
+        $images = [];
 
         foreach ($annotations as $annotation) {
             if (!isset($imageAnnotationArray[$annotation->image_id])) {
@@ -132,6 +138,10 @@ class PtpJob extends BaseJob implements ShouldQueue
                 'image' => $annotation->image_id,
                 'label' => $annotation->label_id,
             ];
+
+            if (!isset($images[$annotation->image_id])) {
+                $images[$annotation->image_id] = $annotation->getFile();
+            }
         };
 
         $jsonData = json_encode($imageAnnotationArray);
@@ -144,7 +154,7 @@ class PtpJob extends BaseJob implements ShouldQueue
         }
 
         file_put_contents($this->tmpInputFile, $jsonData);
-        return $imageAnnotationArray;
+        return $images;
     }
 
     /**
@@ -213,24 +223,19 @@ class PtpJob extends BaseJob implements ShouldQueue
 
         $polygonShape = Shape::polygonId();
 
-        $file = null;
         $insertAnnotations = [];
         $insertAnnotationLabels = [];
 
+        $now = Carbon::now();
 
         foreach ($jsonData as $idx => $annotation) {
-            $newAnnotation = ImageAnnotation::where('id', $annotation['annotation_id'])
-                ->first()
-                ->replicate();
-
-            if (is_null($file)) {
-                $file = $newAnnotation->getFile();
-            }
-            $newAnnotation =  $newAnnotation->toArray();
-
-            $newAnnotation['points'] = json_encode($annotation['points']);
-            $newAnnotation['shape_id'] = $polygonShape;
-            unset($newAnnotation['file']);
+            $newAnnotation = [
+                'image_id' => $annotation['image_id'],
+                'points' => json_encode($annotation['points']),
+                'shape_id' => $polygonShape,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
 
             $insertAnnotations[] = $newAnnotation;
             $insertAnnotationLabels[] = [
@@ -239,38 +244,36 @@ class PtpJob extends BaseJob implements ShouldQueue
             ];
 
             if ($idx > 0 && ($idx % static::$insertChunkSize) === 0) {
-                $this->insertAnnotationChunk($file, $insertAnnotations, $insertAnnotationLabels);
+                $this->insertAnnotationChunk($insertAnnotations, $insertAnnotationLabels);
                 $insertAnnotations = [];
                 $insertAnnotationLabels = [];
             }
         }
 
-        $this->insertAnnotationChunk($file, $insertAnnotations, $insertAnnotationLabels);
+        $this->insertAnnotationChunk($insertAnnotations, $insertAnnotationLabels);
     }
 
     /**
      * Insert chunk of annotations in the DB
      *
-     * @param VolumeFile $file VolumeFile to upload annotations to
      * @param array $annotations Annotations to upload
      * @param array $annotationLabels Annotation labels to upload
      */
     protected function insertAnnotationChunk(
-        VolumeFile $file,
         array $annotations,
         array $annotationLabels
     ): void
     {
-        $file->annotations()->insert($annotations);
+        ImageAnnotation::insert($annotations);
 
-        $ids = $file->annotations()
-            ->orderBy('id', 'desc')
+        $ids = ImageAnnotation::orderBy('id', 'desc')
             ->take(count($annotations))
             ->pluck('id')
             ->reverse()
             ->values()
             ->toArray();
 
+        #we can safely add confidence because we only have Image annotations
         foreach ($annotationLabels as $idx => &$annotationLabel) {
             $annotationLabel['annotation_id'] = $ids[$idx];
             $annotationLabel['confidence'] = 1.0;
