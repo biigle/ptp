@@ -39,7 +39,7 @@ export default {
     computed: {
         ptpButtonTitle() {
             if (this.isRunning) {
-                return "Another Point to Polygon conversion Job is already running!";
+                return "Another Point to Polygon conversion Job is already running on this volume!";
             }
             return "Run Point to Polygon conversion on this volume";
         }
