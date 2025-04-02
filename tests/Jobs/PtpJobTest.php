@@ -239,7 +239,6 @@ class PtpJobTest extends TestCase
             unlink($this->outputFile);
         }
     }
-
 }
 
 class MockPtpJob extends PtpJob
@@ -260,7 +259,6 @@ class MockPtpJob extends PtpJob
         $args = array_slice(func_get_args(), 0, 4, true);
 
         parent::__construct(...$args);
-
     }
 
     protected function python(): void

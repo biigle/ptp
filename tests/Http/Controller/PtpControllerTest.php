@@ -6,11 +6,8 @@ use ApiTestCase;
 use Biigle\Image;
 use Biigle\ImageAnnotation;
 use Biigle\MediaType;
-use Biigle\Modules\Ptp\Jobs\PtpJob;
 use Biigle\Shape;
-use Biigle\Tests\Modules\Ptp\Jobs\MockPtpJob;
 use Biigle\Volume;
-use Exception;
 use Illuminate\Testing\Fluent\AssertableJson;
 use Mockery;
 
