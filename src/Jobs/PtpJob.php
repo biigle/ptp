@@ -147,9 +147,7 @@ class PtpJob extends BaseJob implements ShouldQueue
         $jsonData = json_encode($imageAnnotationArray);
 
         //Create input file with annotations
-        if (file_exists($this->tmpInputFile)) {
-            unlink($this->tmpInputFile);
-        } else if (!file_exists(dirname($this->tmpInputFile))) {
+        if (!file_exists(dirname($this->tmpInputFile))) {
             mkdir(dirname($this->tmpInputFile), recursive:true);
         }
 
@@ -194,8 +192,6 @@ class PtpJob extends BaseJob implements ShouldQueue
 
         if (!file_exists(dirname($this->outputFile))) {
             mkdir(dirname($this->outputFile), recursive:true);
-        } else if (file_exists($this->outputFile)) {
-            unlink($this->outputFile);
         }
 
 
