@@ -2,7 +2,6 @@
 
 namespace Biigle\Modules\Ptp\Notifications;
 
-use Biigle\Report;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -11,14 +10,14 @@ class PtpJobFailed extends Notification
     /**
      * The volume for which the PTP job was running.
      *
-     * @var
+     * @var string
      */
-    protected $volumeName;
+    protected string $volumeName;
 
     /**
      * Create a new notification instance.
      *
-     * @param Report $report
+     * @param string $volumeName
      * @return void
      */
     public function __construct(string $volumeName)

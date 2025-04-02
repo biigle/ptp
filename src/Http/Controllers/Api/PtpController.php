@@ -20,7 +20,7 @@ class PtpController extends Controller
      *
      * @param  $request
      * @param $volumeId
-     * @return
+     * @return void
      */
     public function store(Request $request, int $volumeId)
     {
