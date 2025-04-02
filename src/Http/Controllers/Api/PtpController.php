@@ -1,9 +1,10 @@
 <?php
 
 namespace Biigle\Modules\Ptp\Http\Controllers\Api;
+
 use Biigle\Http\Controllers\Api\Controller;
-use Biigle\Modules\Ptp\Jobs\PtpJob;
 use Biigle\ImageAnnotation;
+use Biigle\Modules\Ptp\Jobs\PtpJob;
 use Biigle\Shape;
 use Biigle\Volume;
 use Exception;
@@ -36,7 +37,7 @@ class PtpController extends Controller
         }
 
         $pointShapeId = Shape::pointId();
-        $annotationsExist = ImageAnnotation::join('images','image_annotations.image_id', '=','images.id')
+        $annotationsExist = ImageAnnotation::join('images', 'image_annotations.image_id', '=', 'images.id')
             ->where('images.volume_id', $volumeId)
             ->where('image_annotations.shape_id', $pointShapeId)
             ->exists();
@@ -75,4 +76,3 @@ class PtpController extends Controller
         return $uuid;
     }
 }
-

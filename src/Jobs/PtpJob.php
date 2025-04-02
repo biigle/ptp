@@ -2,9 +2,9 @@
 
 namespace Biigle\Modules\Ptp\Jobs;
 
-use Biigle\Jobs\Job as BaseJob;
 use Biigle\ImageAnnotation;
 use Biigle\ImageAnnotationLabel;
+use Biigle\Jobs\Job as BaseJob;
 use Biigle\Modules\Ptp\Exceptions\PythonException;
 use Biigle\Modules\Ptp\Notifications\PtpJobConcluded;
 use Biigle\Modules\Ptp\Notifications\PtpJobFailed;
@@ -15,9 +15,9 @@ use Carbon\Carbon;
 use Exception;
 use File;
 use FileCache;
+use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Bus\Batchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Throwable;
@@ -71,8 +71,7 @@ class PtpJob extends BaseJob implements ShouldQueue
         public string $volumeName,
         public User $user,
         public string $jobId,
-    )
-    {
+    ) {
         $this->volumeId = $volumeId;
         $this->volumeName = $volumeName;
 
@@ -96,7 +95,7 @@ class PtpJob extends BaseJob implements ShouldQueue
     public function handle()
     {
         $callback = function ($images, $paths) {
-            $this->generateImageInputFile($paths,  $images);
+            $this->generateImageInputFile($paths, $images);
             $this->python();
         };
         $imageData = $this->generateInputFile();
@@ -117,11 +116,11 @@ class PtpJob extends BaseJob implements ShouldQueue
 
         $pointShapeId = Shape::pointId();
 
-        $annotations = ImageAnnotation::join('image_annotation_labels','image_annotations.id', '=', 'image_annotation_labels.annotation_id')
-            ->join('images','image_annotations.image_id', '=', 'images.id')
+        $annotations = ImageAnnotation::join('image_annotation_labels', 'image_annotations.id', '=', 'image_annotation_labels.annotation_id')
+            ->join('images', 'image_annotations.image_id', '=', 'images.id')
             ->where('images.volume_id', $this->volumeId)
             ->where('image_annotations.shape_id', $pointShapeId)
-            ->select('image_annotations.id as id', 'images.id as image_id', 'image_annotations.points as points','image_annotations.shape_id as shape_id', 'image_annotation_labels.label_id as label_id')
+            ->select('image_annotations.id as id', 'images.id as image_id', 'image_annotations.points as points', 'image_annotations.shape_id as shape_id', 'image_annotation_labels.label_id as label_id')
             ->with('file')
             ->lazy();
 
@@ -148,7 +147,7 @@ class PtpJob extends BaseJob implements ShouldQueue
 
         //Create input file with annotations
         if (!file_exists(dirname($this->tmpInputFile))) {
-            mkdir(dirname($this->tmpInputFile), recursive:true);
+            mkdir(dirname($this->tmpInputFile), recursive: true);
         }
 
         file_put_contents($this->tmpInputFile, $jsonData);
@@ -190,7 +189,7 @@ class PtpJob extends BaseJob implements ShouldQueue
         $this->maybeDownloadCheckpoint($checkpointUrl, $modelPath);
 
         if (!file_exists(dirname($this->outputFile))) {
-            mkdir(dirname($this->outputFile), recursive:true);
+            mkdir(dirname($this->outputFile), recursive: true);
         }
 
 
@@ -257,8 +256,7 @@ class PtpJob extends BaseJob implements ShouldQueue
     protected function insertAnnotationChunk(
         array $annotations,
         array $annotationLabels
-    ): void
-    {
+    ): void {
         ImageAnnotation::insert($annotations);
 
         $ids = ImageAnnotation::orderBy('id', 'desc')
@@ -280,7 +278,6 @@ class PtpJob extends BaseJob implements ShouldQueue
 
         ImageAnnotationLabel::insert($annotationLabels);
     }
-
 
     /**
      * Cleanup the existing job from the Volumes attribute
@@ -327,4 +324,3 @@ class PtpJob extends BaseJob implements ShouldQueue
         }
     }
 }
-

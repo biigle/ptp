@@ -9,4 +9,3 @@ class PythonException extends Exception
     * Class used for when a Python script crashes
     **/
 }
-

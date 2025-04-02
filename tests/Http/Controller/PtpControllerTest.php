@@ -59,7 +59,7 @@ class PtpControllerTest extends ApiTestCase
         $this->postJson($url)->assertStatus(400)->assertJson(
             fn (AssertableJson $json) =>
                 $json->where('message', 'Another point to polygon conversion job is running in this volume!')
-                     ->etc()
+                    ->etc()
         );
     }
 
@@ -74,7 +74,7 @@ class PtpControllerTest extends ApiTestCase
         $this->postJson($url)->assertStatus(400)->assertJson(
             fn (AssertableJson $json) =>
                 $json->where('message', 'The point to polygon conversion cannot be executed on video volumes or volumes with very large images.')
-                     ->etc()
+                    ->etc()
         );
     }
 
@@ -99,7 +99,7 @@ class PtpControllerTest extends ApiTestCase
         $this->postJson($url)->assertStatus(400)->assertJson(
             fn (AssertableJson $json) =>
                 $json->where('message', 'The point to polygon conversion cannot be executed on video volumes or volumes with very large images.')
-                     ->etc()
+                    ->etc()
         );
     }
 
@@ -112,7 +112,7 @@ class PtpControllerTest extends ApiTestCase
         $this->postJson($url)->assertStatus(400)->assertJson(
             fn (AssertableJson $json) =>
                 $json->where('message', 'No point annotations to convert!')
-                     ->etc()
+                    ->etc()
         );
     }
 
@@ -145,7 +145,7 @@ class PtpControllerTest extends ApiTestCase
         $this->postJson($url)->assertStatus(400)->assertJson(
             fn (AssertableJson $json) =>
                 $json->where('message', 'Unable to create Point To Polygon conversion job!')
-                     ->etc()
+                    ->etc()
         );
 
         //$this->volume does not update with attrs
@@ -154,4 +154,3 @@ class PtpControllerTest extends ApiTestCase
         $this->assertFalse(isset($volume->attrs['ptp_job_id']));
     }
 }
-

@@ -2,19 +2,18 @@
 
 namespace Biigle\Tests\Modules\Ptp\Jobs;
 
+use Biigle\Image;
 use Biigle\ImageAnnotation;
 use Biigle\ImageAnnotationLabel;
+use Biigle\Label;
 use Biigle\Modules\Ptp\Exceptions\PythonException;
 use Biigle\Modules\Ptp\Jobs\PtpJob;
 use Biigle\Shape;
-use Biigle\Image;
-use Biigle\Label;
 use Biigle\User;
 use Biigle\Volume;
 use Exception;
 use Ramsey\Uuid\Uuid;
 use TestCase;
-
 
 class PtpJobTest extends TestCase
 {
@@ -56,7 +55,7 @@ class PtpJobTest extends TestCase
         $this->imageAnnotation = ImageAnnotation::factory()->create([
             'image_id' => $this->image->id,
             'shape_id' => Shape::pointId(),
-            'points' => [0,0],
+            'points' => [0, 0],
         ]);
 
         $this->label = Label::factory()->create();
@@ -71,7 +70,7 @@ class PtpJobTest extends TestCase
         $this->fakeAnnotation = ImageAnnotation::factory()->create([
             'image_id' => $this->image->id,
             'shape_id' => Shape::polygonId(),
-            'points' => [0,0,1,2,3,4,5],
+            'points' => [0, 0, 1, 2, 3, 4, 5],
         ]);
 
         $fakeLabel = Label::factory()->create();
@@ -89,14 +88,19 @@ class PtpJobTest extends TestCase
                 'shape' => Shape::pointId(),
                 'image' => $this->image->id,
                 'label' => $this->label->id,
-        ]]];
+            ]]];
     }
 
     public function testPtpHandleWithoutConvertedFiles(): void
     {
         //Test that the PTP job correctly calls the handle, fails without converted files and cleans up the volume
         $job = new MockPtpJob(
-            $this->volume->id, $this->volume->name, $this->user, $this->uuid, true, []
+            $this->volume->id,
+            $this->volume->name,
+            $this->user,
+            $this->uuid,
+            true,
+            []
         );
 
         $this->expectException(Exception::class);
@@ -162,7 +166,7 @@ class PtpJobTest extends TestCase
         $this->setUpAnnotations();
         try {
             $outputFileContent = [[
-                'points' => [1,2,3,4,5,6],
+                'points' => [1, 2, 3, 4, 5, 6],
                 'image_id' => $this->image->id,
                 'label_id' => $this->label->id,
             ]];
@@ -179,7 +183,7 @@ class PtpJobTest extends TestCase
 
             $expectedValue = [
                 'id' => $imageAnnotationValues['id'],
-                'points' => [1,2,3,4,5,6],
+                'points' => [1, 2, 3, 4, 5, 6],
                 'image_id' => $this->image->id,
                 'shape_id' => Shape::polygonId(),
             ];
@@ -200,13 +204,18 @@ class PtpJobTest extends TestCase
         $this->setUpAnnotations();
 
         $outputFileContent = [[
-            'points' => [1,2,3,4,5,6],
+            'points' => [1, 2, 3, 4, 5, 6],
             'image_id' => $this->image->id,
             'label_id' => $this->label->id,
         ]];
 
         $job = new MockPtpJob(
-            $this->volume->id, $this->volume->name, $this->user, $this->uuid, true, $outputFileContent
+            $this->volume->id,
+            $this->volume->name,
+            $this->user,
+            $this->uuid,
+            true,
+            $outputFileContent
         );
 
         try {
@@ -224,7 +233,7 @@ class PtpJobTest extends TestCase
 
             $expectedValue = [
                 'id' => $imageAnnotationValues['id'],
-                'points' => [1,2,3,4,5,6],
+                'points' => [1, 2, 3, 4, 5, 6],
                 'image_id' => $this->image->id,
                 'shape_id' => Shape::polygonId(),
             ];
@@ -252,8 +261,7 @@ class MockPtpJob extends PtpJob
         public string $jobId,
         public bool $generateOutput = false,
         public array $mockOutputData = [],
-    )
-    {
+    ) {
         $this->generateOutput = $generateOutput;
         $this->mockOutputData = $mockOutputData;
         $args = array_slice(func_get_args(), 0, 4, true);
@@ -270,4 +278,3 @@ class MockPtpJob extends PtpJob
         }
     }
 }
-

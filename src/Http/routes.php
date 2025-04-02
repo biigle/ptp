@@ -7,4 +7,3 @@ $router->group([
 ], function ($router) {
     $router->post('send-ptp-job/{volumeId}', 'PtpController@store');
 });
-
