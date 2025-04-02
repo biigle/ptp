@@ -27,7 +27,7 @@ class PtpController extends Controller
         $volume = Volume::findOrFail($volumeId);
         $this->authorize('edit-in', $volume);
 
-        if (!$volume->isImageVolume() || $volume->hasTiledImages()){
+        if (!$volume->isImageVolume() || $volume->hasTiledImages()) {
             abort(400, 'The point to polygon conversion cannot be executed on video volumes or volumes with very large images.');
         }
 

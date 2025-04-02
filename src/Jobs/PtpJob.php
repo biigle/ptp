@@ -95,7 +95,7 @@ class PtpJob extends BaseJob implements ShouldQueue
      */
     public function handle()
     {
-        $callback = function ($images, $paths){
+        $callback = function ($images, $paths) {
             $this->generateImageInputFile($paths,  $images);
             $this->python();
         };
@@ -149,7 +149,7 @@ class PtpJob extends BaseJob implements ShouldQueue
         //Create input file with annotations
         if (file_exists($this->tmpInputFile)) {
             unlink($this->tmpInputFile);
-        } else if (!file_exists(dirname($this->tmpInputFile))){
+        } else if (!file_exists(dirname($this->tmpInputFile))) {
             mkdir(dirname($this->tmpInputFile), recursive:true);
         }
 
@@ -168,7 +168,7 @@ class PtpJob extends BaseJob implements ShouldQueue
         $imagePathInput = [];
 
         //Create input file with images
-        for ($i = 0, $size = count($paths); $i < $size; $i++){
+        for ($i = 0, $size = count($paths); $i < $size; $i++) {
             $imagePathInput[$images[$i]->id] = $paths[$i];
         }
 
@@ -194,7 +194,7 @@ class PtpJob extends BaseJob implements ShouldQueue
 
         if (!file_exists(dirname($this->outputFile))) {
             mkdir(dirname($this->outputFile), recursive:true);
-        } else if (file_exists($this->outputFile)){
+        } else if (file_exists($this->outputFile)) {
             unlink($this->outputFile);
         }
 
