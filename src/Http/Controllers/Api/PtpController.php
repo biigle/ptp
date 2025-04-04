@@ -48,16 +48,7 @@ class PtpController extends Controller
 
         $jobId = $this->setUniquePtpJob($volume);
 
-        try {
-            PtpJob::dispatch($volume->id, $volume->name, $request->user(), $jobId);
-        } catch (Exception $e) {
-            // If unable to dispatch a PTP Job, reset the PTP Job ID
-            $attrs = $volume->attrs;
-            unset($attrs['ptp_job_id']);
-            $volume->attrs = $attrs;
-            $volume->save();
-            abort(400, 'Unable to create Point To Polygon conversion job!');
-        }
+        PtpJob::dispatch($volume->id, $volume->name, $request->user(), $jobId);
     }
 
     /**
