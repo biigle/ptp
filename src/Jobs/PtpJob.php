@@ -206,7 +206,7 @@ class PtpJob extends BaseJob implements ShouldQueue
     /**
      * Upload the converted annotations to the DB
      *
-    */
+     */
     public function uploadConvertedAnnotations(): void
     {
         $jsonData = json_decode(file_get_contents($this->outputFile), true);
@@ -282,7 +282,7 @@ class PtpJob extends BaseJob implements ShouldQueue
     /**
      * Cleanup the existing job from the Volumes attribute
      *
-    **/
+     */
     public function cleanupJob(): void
     {
         Volume::where('attrs->ptp_job_id', $this->jobId)->each(function ($volume) {
