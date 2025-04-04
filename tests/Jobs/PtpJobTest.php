@@ -38,11 +38,11 @@ class PtpJobTest extends TestCase
         $this->outputFile = config('ptp.temp_dir').'/'.'ptp/'.$this->volume->id.'_converted_annotations.json';
 
         if (!File::exists(dirname($this->inputFile))) {
-            mkdir(dirname($this->inputFile), recursive: true);
+            File::makeDirectory(dirname($this->inputFile), 0700, true, true);
         }
 
         if (!File::exists(dirname($this->outputFile))) {
-            mkdir(dirname($this->outputFile), recursive: true);
+            File::makeDirectory(dirname($this->outputFile), 0700, true, true);
         }
 
         $this->user = User::factory()->create();

@@ -146,11 +146,11 @@ class PtpJob extends BaseJob implements ShouldQueue
         $jsonData = json_encode($imageAnnotationArray);
 
         //Create input file with annotations
-        if (!file_exists(dirname($this->tmpInputFile))) {
-            mkdir(dirname($this->tmpInputFile), recursive: true);
+        if (!File::exists(dirname($this->tmpInputFile))) {
+            File::makeDirectory(dirname($this->tmpInputFile), 0700, true, true);
         }
 
-        file_put_contents($this->tmpInputFile, $jsonData);
+        File::put($this->tmpInputFile, $jsonData);
         return $images;
     }
 
@@ -169,7 +169,7 @@ class PtpJob extends BaseJob implements ShouldQueue
             $imagePathInput[$images[$i]->id] = $paths[$i];
         }
 
-        file_put_contents($this->tmpImageInputFile, json_encode($imagePathInput));
+        File::put($this->tmpImageInputFile, json_encode($imagePathInput));
     }
 
     /**
@@ -188,8 +188,8 @@ class PtpJob extends BaseJob implements ShouldQueue
 
         $this->maybeDownloadCheckpoint($checkpointUrl, $modelPath);
 
-        if (!file_exists(dirname($this->outputFile))) {
-            mkdir(dirname($this->outputFile), recursive: true);
+        if (!File::exists(dirname($this->outputFile))) {
+            File::makeDirectory(dirname($this->outputFile), 0700, true, true);
         }
 
 
@@ -209,7 +209,7 @@ class PtpJob extends BaseJob implements ShouldQueue
      */
     public function uploadConvertedAnnotations(): void
     {
-        $jsonData = json_decode(file_get_contents($this->outputFile), true);
+        $jsonData = json_decode(File::get($this->outputFile), true);
 
         if (count($jsonData) == 0) {
             throw new Exception('No files converted!');
