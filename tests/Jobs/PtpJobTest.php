@@ -12,6 +12,7 @@ use Biigle\Shape;
 use Biigle\User;
 use Biigle\Volume;
 use Exception;
+use File;
 use Ramsey\Uuid\Uuid;
 use TestCase;
 
@@ -36,11 +37,11 @@ class PtpJobTest extends TestCase
         $this->inputFile = config('ptp.temp_dir').'/ptp/input-files/'.$this->volume->id;
         $this->outputFile = config('ptp.temp_dir').'/'.'ptp/'.$this->volume->id.'_converted_annotations.json';
 
-        if (!file_exists(dirname($this->inputFile))) {
+        if (!File::exists(dirname($this->inputFile))) {
             mkdir(dirname($this->inputFile), recursive: true);
         }
 
-        if (!file_exists(dirname($this->outputFile))) {
+        if (!File::exists(dirname($this->outputFile))) {
             mkdir(dirname($this->outputFile), recursive: true);
         }
 
@@ -112,8 +113,8 @@ class PtpJobTest extends TestCase
             $volume = Volume::where('id', $this->volume->id)->first();
             $this->assertFalse(isset($volume->attrs['ptp_job_id']));
         } finally {
-            unlink($this->inputFile.'.json');
-            unlink($this->inputFile.'_images.json');
+            File::delete($this->inputFile.'.json');
+            File::delete($this->inputFile.'_images.json');
         }
     }
 
@@ -123,10 +124,10 @@ class PtpJobTest extends TestCase
         try {
             $this->setUpAnnotations();
             $job->generateInputFile();
-            $json = json_decode(file_get_contents($this->inputFile.'.json'), true);
+            $json = json_decode(File::get($this->inputFile.'.json'), true);
             $this->assertEquals($this->inputFileContents, $json);
         } finally {
-            unlink($this->inputFile.'.json');
+            File::delete($this->inputFile.'.json');
         }
     }
 
@@ -135,10 +136,10 @@ class PtpJobTest extends TestCase
         $job = new MockPtpJob($this->volume->id, $this->volume->name, $this->user, $this->uuid);
         try {
             $job->generateImageInputFile(['testPath'], [$this->image]);
-            $json = json_decode(file_get_contents($this->inputFile.'_images.json'), true);
+            $json = json_decode(File::get($this->inputFile.'_images.json'), true);
             $this->assertEquals($json, [$this->image->id => 'testPath']);
         } finally {
-            unlink($this->inputFile.'_images.json');
+            File::delete($this->inputFile.'_images.json');
         }
     }
 
@@ -152,8 +153,8 @@ class PtpJobTest extends TestCase
         try {
             $job->handle();
         } finally {
-            unlink($this->inputFile.'.json');
-            unlink($this->inputFile.'_images.json');
+            File::delete($this->inputFile.'.json');
+            File::delete($this->inputFile.'_images.json');
         }
         $volume = Volume::where('id', $this->volume->id)->first();
         $this->assertFalse(isset($volume->attrs['ptp_job_id']));
@@ -171,7 +172,7 @@ class PtpJobTest extends TestCase
                 'label_id' => $this->label->id,
             ]];
 
-            file_put_contents($this->outputFile, json_encode($outputFileContent));
+            File::put($this->outputFile, json_encode($outputFileContent));
             $job->uploadConvertedAnnotations();
 
             $imageAnnotationValues = ImageAnnotation::where('image_id', $this->image->id)
@@ -194,7 +195,7 @@ class PtpJobTest extends TestCase
             $expectedValue = ['label_id' => $this->label->id, 'user_id' => $this->user2->id];
             $this->assertEquals($imageAnnotationLabelValues, $expectedValue);
         } finally {
-            unlink($this->outputFile);
+            File::delete($this->outputFile);
         }
     }
 
@@ -243,9 +244,9 @@ class PtpJobTest extends TestCase
             $expectedValue = ['label_id' => $this->label->id, 'user_id' => $this->user->id];
             $this->assertEquals($imageAnnotationLabelValues, $expectedValue);
         } finally {
-            unlink($this->inputFile.'.json');
-            unlink($this->inputFile.'_images.json');
-            unlink($this->outputFile);
+            File::delete($this->inputFile.'.json');
+            File::delete($this->inputFile.'_images.json');
+            File::delete($this->outputFile);
         }
     }
 }
@@ -274,7 +275,7 @@ class MockPtpJob extends PtpJob
         $this->pythonCalled = true;
 
         if ($this->generateOutput) {
-            file_put_contents($this->outputFile, json_encode($this->mockOutputData));
+            File::put($this->outputFile, json_encode($this->mockOutputData));
         }
     }
 }
