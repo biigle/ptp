@@ -145,7 +145,6 @@ class PtpJob extends BaseJob implements ShouldQueue
 
         $jsonData = json_encode($imageAnnotationArray);
 
-        //Create input file with annotations
         if (!File::exists(dirname($this->tmpInputFile))) {
             File::makeDirectory(dirname($this->tmpInputFile), 0700, true, true);
         }

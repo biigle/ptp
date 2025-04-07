@@ -80,7 +80,6 @@ class PtpControllerTest extends ApiTestCase
 
     public function testTiledImages()
     {
-
         $image = Image::factory()->create([
             'volume_id' => $this->volume()->id,
             'tiled' => true,
@@ -92,7 +91,6 @@ class PtpControllerTest extends ApiTestCase
         ]);
 
         $this->beEditor();
-
 
         $url = '/api/v1/send-ptp-job/'.$this->volume()->id;
 

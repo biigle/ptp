@@ -191,7 +191,10 @@ class PtpJobTest extends TestCase
 
             $this->assertEquals($expectedValue, $imageAnnotationValues);
 
-            $imageAnnotationLabelValues = ImageAnnotationLabel::where('annotation_id', $imageAnnotationValues['id'])->select('label_id', 'user_id')->first()->toArray();
+            $imageAnnotationLabelValues = ImageAnnotationLabel::where('annotation_id', $imageAnnotationValues['id'])
+                ->select('label_id', 'user_id')
+                ->first()
+                ->toArray();
             $expectedValue = ['label_id' => $this->label->id, 'user_id' => $this->user2->id];
             $this->assertEquals($imageAnnotationLabelValues, $expectedValue);
         } finally {
@@ -240,7 +243,10 @@ class PtpJobTest extends TestCase
             ];
             $this->assertEquals($expectedValue, $imageAnnotationValues);
 
-            $imageAnnotationLabelValues = ImageAnnotationLabel::where('annotation_id', $imageAnnotationValues['id'])->select('label_id', 'user_id')->first()->toArray();
+            $imageAnnotationLabelValues = ImageAnnotationLabel::where('annotation_id', $imageAnnotationValues['id'])
+                ->select('label_id', 'user_id')
+                ->first()
+                ->toArray();
             $expectedValue = ['label_id' => $this->label->id, 'user_id' => $this->user->id];
             $this->assertEquals($imageAnnotationLabelValues, $expectedValue);
         } finally {
