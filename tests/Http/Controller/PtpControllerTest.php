@@ -9,7 +9,6 @@ use Biigle\MediaType;
 use Biigle\Shape;
 use Biigle\Volume;
 use Illuminate\Testing\Fluent\AssertableJson;
-use Mockery;
 
 class PtpControllerTest extends ApiTestCase
 {

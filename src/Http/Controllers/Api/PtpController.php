@@ -7,7 +7,6 @@ use Biigle\ImageAnnotation;
 use Biigle\Modules\Ptp\Jobs\PtpJob;
 use Biigle\Shape;
 use Biigle\Volume;
-use Exception;
 use Illuminate\Http\Request;
 use Ramsey\Uuid\Uuid;
 
