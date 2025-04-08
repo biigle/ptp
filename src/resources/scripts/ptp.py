@@ -449,8 +449,11 @@ def mask_to_contour(
             return results[idx]
         else:
             # otherwise get the one with the best score
-            idx = np.argsort(scores)[::-1]
-            mask = np.reshape(masks[idx[0]], (img_height, img_width))
+            try:
+                idx = np.argsort(scores)[::-1]
+                mask = np.reshape(masks[idx[0]], (img_height, img_width))
+            except ValueError:
+                return [None, None]
     else:
         mask = masks
     # check if mask contains anything. If not return because no contours can be found anyway
@@ -783,7 +786,6 @@ if __name__ == "__main__":
         if len(annotations) == 0:
             logging.error(f"No annotations to load for image with id {image_id}!")
             continue
-        resulting_annotations = []
         image_path = image_paths.get(image_id)
         if image_path is None:
             logging.error(f"Image path for {image_id} not found!")
@@ -802,7 +804,6 @@ if __name__ == "__main__":
 
         for annotation in points:
             resulting_annotations += process_image(annotation, image, image_id, sam)
-        # if the save argument is given save the annotations to the given path
     os.makedirs(os.path.dirname(args.output_file), exist_ok=True)
     pd.DataFrame(resulting_annotations).loc[
         :, ["image_id", "label_id", "annotation_id", "confidence", "points"]
