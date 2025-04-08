@@ -30,13 +30,13 @@ class PtpJob extends BaseJob implements ShouldQueue
      * File where the input data for the Python script will be kept
      * @var string
      */
-    private string $tmpInputFile;
+    protected string $tmpInputFile;
 
     /**
      * File where the image input data for the Python script will be kept
      * @var string
      */
-    private string $tmpImageInputFile;
+    protected string $tmpImageInputFile;
 
     /**
      * File where result data from the Python conversion script will be stored
@@ -211,7 +211,7 @@ class PtpJob extends BaseJob implements ShouldQueue
         $jsonData = json_decode(File::get($this->outputFile), true);
 
         if (count($jsonData) == 0) {
-            throw new Exception('No files converted!');
+            throw new Exception('No annotations were converted!');
         }
 
         $polygonShape = Shape::polygonId();
