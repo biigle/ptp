@@ -222,6 +222,13 @@ class PtpJob extends BaseJob implements ShouldQueue
         $now = Carbon::now();
 
         foreach ($jsonData as $idx => $annotation) {
+
+            //It might happen that we are unable to convert some of the point
+            //annotations. In this case, we should not upload the data.
+            if (is_null($annotation['points'])) {
+                continue;
+            }
+
             $newAnnotation = [
                 'image_id' => $annotation['image_id'],
                 'points' => json_encode($annotation['points']),
