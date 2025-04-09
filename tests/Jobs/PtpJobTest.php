@@ -217,6 +217,12 @@ class PtpJobTest extends TestCase
                     'points' => [1, 2, 3, 4, 5, 6],
                     'image_id' => $this->image2->id,
                     'label_id' => $this->label2->id,
+                ],
+                //This annotation should not be uploaded
+                [
+                    'points' => null,
+                    'image_id' => $this->image2->id,
+                    'label_id' => $this->label2->id,
                 ]];
 
             File::put($this->outputFile, json_encode($outputFileContent));

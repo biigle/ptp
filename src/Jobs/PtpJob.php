@@ -163,7 +163,6 @@ class PtpJob extends BaseJob implements ShouldQueue
     {
         $imagePathInput = [];
 
-        //Create input file with images
         for ($i = 0, $size = count($paths); $i < $size; $i++) {
             $imagePathInput[$images[$i]->id] = $paths[$i];
         }
