@@ -1,1 +1,3 @@
-export default Vue.resource('api/v1/send-ptp-job{/id}');
+import { Resource } from '../import.js';
+
+export default Resource('api/v1/send-ptp-job{/id}');

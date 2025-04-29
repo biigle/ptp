@@ -22,7 +22,7 @@ class PtpServiceProvider extends ServiceProvider
         $this->loadViewsFrom(__DIR__.'/resources/views', 'ptp');
 
         $this->publishes([
-            __DIR__.'/public/assets' => public_path('vendor/ptp'),
+            __DIR__.'/public' => public_path('vendor/ptp'),
         ], 'public');
 
         $router->group([

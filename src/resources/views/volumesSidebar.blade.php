@@ -4,8 +4,8 @@
     </sidebar-tab>
 @endif
 @push('scripts')
-    <script src="{{ cachebust_asset('vendor/ptp/scripts/main.js') }}"></script>
-    <script type="text/javascript">
+    {{vite_hot(base_path('vendor/ptp/hot'), ['src/resources/assets/js/main.js'], 'vendor/ptp')}}
+    <script type="module">
         biigle.$declare('volumes.isRunning', {{ isset($volume->attrs['ptp_job_id']) ? 'true' : 'false' }} );
     </script>
 @endpush

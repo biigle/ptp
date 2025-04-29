@@ -1,2 +1,2 @@
-import PtpContainer from './ptpContainer';
+import PtpContainer from './ptpContainer.vue';
 biigle.$mount('ptp-container', PtpContainer);

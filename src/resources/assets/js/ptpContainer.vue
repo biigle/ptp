@@ -28,8 +28,8 @@
     </div>
 </template>
 <script>
-import PtpJobApi from "./api/ptpJob";
-import { handleErrorResponse } from "./import";
+import PtpJobApi from "./api/ptpJob.js";
+import { handleErrorResponse } from "./import.js";
 
 export default {
     data() {
