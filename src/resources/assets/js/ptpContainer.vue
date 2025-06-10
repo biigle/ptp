@@ -19,7 +19,7 @@
                     type="button"
                     :title="ptpButtonTitle"
                     @click="sendPtpRequest"
-                    :disabled="isRunning"
+                    :disabled="isRunning || null"
                 >
                     Submit
                 </button>
