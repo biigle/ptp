@@ -45,9 +45,17 @@ class PtpController extends Controller
             abort(400, 'No point annotations to convert!');
         }
 
-        $jobId = $this->setUniquePtpJob($volume);
-
-        PtpJob::dispatch($volume->id, $volume->name, $request->user(), $jobId);
+         try {
+            $jobId = $this->setUniquePtpJob($volume);
+            PtpJob::dispatch($volume->id, $volume->name, $request->user(), $jobId);
+        } catch (Exception $e) {
+            // If unable to dispatch a PTP Job, reset the PTP Job ID
+            $attrs = $volume->attrs;
+            unset($attrs['ptp_job_id']);
+            $volume->attrs = $attrs;
+            $volume->save();
+            throw $e;
+        }
     }
 
     /**
