@@ -60,25 +60,23 @@ class PtpJob extends BaseJob implements ShouldQueue
     /**
      * Job used for converting Point annotations to Polygons
      *
-     * @param int $volumeId Id of the volume for the PTP Job
-     * @param string $volumeName Name of the volume for the PTP Job
+     * @param string $volume Volume for the PTP Job
      * @param User $user User starting the PtpJob
      * @param string $jobId Uuid associated to the job
      *
      */
     public function __construct(
-        public int $volumeId,
-        public string $volumeName,
+        public Volume $volume,
         public User $user,
         public string $jobId,
     ) {
-        $this->volumeId = $volumeId;
-        $this->volumeName = $volumeName;
+        $this->volumeId = $volume->id;
+        $this->volumeName = $volume->name;
 
         //$inputFile.'.json' will be used for image annotations, $inputFile.'_images.json' for image paths
-        $inputFile = 'ptp/input-files/'.$volumeId;
+        $inputFile = 'ptp/input-files/'.$volume->id;
 
-        $outputFile = 'ptp/'.$volumeId.'_converted_annotations.json';
+        $outputFile = 'ptp/'.$volume->id.'_converted_annotations.json';
 
         $this->outputFile = config('ptp.temp_dir').'/'.$outputFile;
         $this->tmpInputFile = config('ptp.temp_dir').'/'.$inputFile.'.json';

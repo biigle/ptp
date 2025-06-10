@@ -123,8 +123,7 @@ class PtpJobTest extends TestCase
     {
         //Test that the PTP job correctly calls the handle, fails without converted files and cleans up the volume
         $job = new MockPtpJob(
-            $this->volume->id,
-            $this->volume->name,
+            $this->volume,
             $this->user,
             $this->uuid,
             true,
@@ -147,7 +146,7 @@ class PtpJobTest extends TestCase
 
     public function testPtpGenerateInputFile(): void
     {
-        $job = new MockPtpJob($this->volume->id, $this->volume->name, $this->user, $this->uuid);
+        $job = new MockPtpJob($this->volume, $this->user, $this->uuid);
         try {
             $this->setUpAnnotations();
             $imageData = $job->generateInputFile();
@@ -171,7 +170,7 @@ class PtpJobTest extends TestCase
 
     public function testPtpGenerateImageInputFile(): void
     {
-        $job = new MockPtpJob($this->volume->id, $this->volume->name, $this->user, $this->uuid);
+        $job = new MockPtpJob($this->volume, $this->user, $this->uuid);
         try {
             $job->generateImageInputFile(['testPath', 'testPath2'], [$this->image, $this->image2]);
             $json = json_decode(File::get($this->inputFile.'_images.json'), true);
@@ -190,7 +189,7 @@ class PtpJobTest extends TestCase
         //Here we test that the real python script is called, fails and the PTP job is cleared
         $this->expectException(PythonException::class);
         $this->setUpAnnotations();
-        $job = new PtpJob($this->volume->id, $this->volume->name, $this->user, $this->uuid);
+        $job = new PtpJob($this->volume, $this->user, $this->uuid);
         config(['ptp.python' => 'fake']);
         try {
             $job->handle();
@@ -205,7 +204,7 @@ class PtpJobTest extends TestCase
     public function testPtpUploadedAnnotations(): void
     {
         //Test that annotations are correctly uploaded by the uploadAnnotations method
-        $job = new MockPtpJob($this->volume->id, $this->volume->name, $this->user2, $this->uuid);
+        $job = new MockPtpJob($this->volume, $this->user2, $this->uuid);
         $this->setUpAnnotations();
         try {
             $outputFileContent = [[
@@ -269,8 +268,7 @@ class PtpJobTest extends TestCase
         $this->setUpAnnotations();
 
         $job = new MockPtpJob(
-            $this->volume->id,
-            $this->volume->name,
+            $this->volume,
             $this->user,
             $this->uuid,
             true,
@@ -325,14 +323,13 @@ class MockPtpJob extends PtpJob
     public bool $pythonCalled = false;
 
     public function __construct(
-        public int $volumeId,
-        public string $volumeName,
+        public Volume $volume,
         public User $user,
         public string $jobId,
         public bool $generateOutput = false,
         public bool $emptyOutput = false,
     ) {
-        $args = array_slice(func_get_args(), 0, 4, true);
+        $args = array_slice(func_get_args(), 0, 3, true);
 
         parent::__construct(...$args);
     }
