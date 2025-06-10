@@ -21,13 +21,14 @@
 </form>
 
 @push('scripts')
-<script type="text/javascript">
-    biigle.$mount('ptp-notification-settings', {
-        mixins: [biigle.$require('core.mixins.notificationSettings')],
-        data: {
-            settings: '{!! $user->getSettings('ptp_notifications', config('ptp.notifications.default_settings')) !!}',
-            settingsKey: 'ptp_notifications',
-        },
-    });
-</script>
+    {{vite_hot(base_path('vendor/ptp/hot'), ['src/resources/assets/js/main.js'], 'vendor/ptp')}}
+    <script type="module">
+        biigle.$mount('ptp-notification-settings', {
+            mixins: [biigle.$require('core.mixins.notificationSettings')],
+            data: {
+                settings: '{!! $user->getSettings('ptp_notifications', config('ptp.notifications.default_settings')) !!}',
+                settingsKey: 'ptp_notifications',
+            },
+        });
+    </script>
 @endpush
