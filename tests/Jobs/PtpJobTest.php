@@ -332,8 +332,6 @@ class MockPtpJob extends PtpJob
         public bool $generateOutput = false,
         public bool $emptyOutput = false,
     ) {
-        $this->generateOutput = $generateOutput;
-        $this->emptyOutput = $emptyOutput;
         $args = array_slice(func_get_args(), 0, 4, true);
 
         parent::__construct(...$args);
