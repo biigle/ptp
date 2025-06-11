@@ -771,6 +771,10 @@ if __name__ == "__main__":
         for annotation in points:
             resulting_annotations += process_image(annotation, image, image_id, sam)
 
+    if len(resulting_annotations) == 0:
+        logging.error("Unable to compute any annotations for expected area!")
+        exit(0)
+
     # if the save argument is given save the annotations to the given path
     expected_areas = pd.DataFrame(resulting_annotations)
     expected_areas = (
