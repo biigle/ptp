@@ -2,27 +2,35 @@
 
 namespace Biigle\Modules\Ptp\Notifications;
 
+use Biigle\Volume;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class PtpJobConcluded extends Notification
 {
     /**
-     * The volume for which the PTP job was running.
+     * The volume name for which the PTP job was running.
      *
      * @var string
      */
     protected string $volumeName;
 
     /**
+     * The volume ID for which the PTP job was running.
+     *
+     * @var string
+     */
+    protected int $volumeId;
+    /**
      * Create a new notification instance.
      *
      * @param string $volumeName
      * @return void
      */
-    public function __construct(string $volumeName)
+    public function __construct(Volume $volume)
     {
-        $this->volumeName = $volumeName;
+        $this->volumeName = $volume->name;
+        $this->volumeId = $volume->id;
     }
 
     /**
@@ -57,6 +65,10 @@ class PtpJobConcluded extends Notification
         $message = (new MailMessage)
             ->subject('Your Point To Polygon conversion Job has concluded succesfully')
             ->line("The Point To Polygon conversion for volume $this->volumeName has concluded successfully.");
+
+        if (config('app.url')) {
+            $message = $message->action('Show volume', route('volume', $this->volumeId));
+        }
 
         return $message;
     }
