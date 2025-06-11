@@ -12,6 +12,7 @@ use Biigle\Shape;
 use Biigle\User;
 use Biigle\Volume;
 use Carbon\Carbon;
+use DB;
 use Exception;
 use File;
 use FileCache;
@@ -51,6 +52,12 @@ class PtpJob extends BaseJob implements ShouldQueue
     public static int $insertChunkSize = 5000;
 
     /**
+     * Number of images to be processed per chunk
+     * @var int
+     */
+    public static int $imageChunkSize = 100;
+
+    /**
      * Ignore this job if the project or volume does not exist any more.
      *
      * @var bool
@@ -70,8 +77,7 @@ class PtpJob extends BaseJob implements ShouldQueue
         public User $user,
         public string $jobId,
     ) {
-        $this->volumeId = $volume->id;
-        $this->volumeName = $volume->name;
+        $this->volume = $volume;
 
         //$inputFile.'.json' will be used for image annotations, $inputFile.'_images.json' for image paths
         $inputFile = 'ptp/input-files/'.$volume->id;
@@ -92,14 +98,19 @@ class PtpJob extends BaseJob implements ShouldQueue
      */
     public function handle()
     {
-        $callback = function ($images, $paths) {
-            $this->generateImageInputFile($paths, $images);
-            $this->python();
-        };
-        $imageData = $this->generateInputFile();
-        FileCache::batch(array_values($imageData), $callback);
+        DB::transaction(function () {
+            $callback = function ($images, $paths) {
+                $this->generateImageInputFile($paths, $images);
+                $this->python();
+            };
+            $this->volume->images()->chunkById(static::$imageChunkSize, function ($chunk) use ($callback) {
+                $imageData = $this->generateInputFile($chunk);
+                FileCache::batch($imageData, $callback);
+                $this->uploadConvertedAnnotations();
+            });
+        });
         $this->uploadConvertedAnnotations();
-        $this->user->notify(new PtpJobConcluded($this->volumeName));
+        $this->user->notify(new PtpJobConcluded($this->volume));
         $this->cleanupJob();
     }
 
@@ -116,7 +127,7 @@ class PtpJob extends BaseJob implements ShouldQueue
 
         $annotations = ImageAnnotation::join('image_annotation_labels', 'image_annotations.id', '=', 'image_annotation_labels.annotation_id')
             ->join('images', 'image_annotations.image_id', '=', 'images.id')
-            ->where('images.volume_id', $this->volumeId)
+            ->where('images.volume_id', $this->volume->id)
             ->where('image_annotations.shape_id', $pointShapeId)
             ->select('image_annotations.id as id', 'images.id as image_id', 'image_annotations.points as points', 'image_annotations.shape_id as shape_id', 'image_annotation_labels.label_id as label_id')
             ->with('file')
@@ -160,6 +171,9 @@ class PtpJob extends BaseJob implements ShouldQueue
     public function generateImageInputFile(array $paths, array $images): void
     {
         $imagePathInput = [];
+        //To correctly build the image -> paths json file, we need indexed arrays
+        $paths = array_values($paths);
+        $images = array_values($images);
 
         for ($i = 0, $size = count($paths); $i < $size; $i++) {
             $imagePathInput[$images[$i]->id] = $paths[$i];
@@ -303,7 +317,7 @@ class PtpJob extends BaseJob implements ShouldQueue
      */
     public function failed(?Throwable $exception): void
     {
-        $this->user->notify(new PtpJobFailed($this->volumeName));
+        $this->user->notify(new PtpJobFailed($this->volume));
         $this->cleanupJob();
     }
 
