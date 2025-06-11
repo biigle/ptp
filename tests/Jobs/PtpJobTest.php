@@ -138,6 +138,11 @@ class PtpJobTest extends TestCase
             $this->assertTrue($job->pythonCalled);
             $volume = Volume::where('id', $this->volume->id)->first();
             $this->assertFalse(isset($volume->attrs['ptp_job_id']));
+
+            //Check that the job actually cleaned up the files after execution.
+            $this->assertFalse(File::exists($this->inputFile.'.json'));
+            $this->assertFalse(File::exists($this->inputFile.'_images.json'));
+            $this->assertFalse(File::exists($this->outputFile));
         } finally {
             File::delete($this->inputFile.'.json');
             File::delete($this->inputFile.'_images.json');
@@ -193,6 +198,11 @@ class PtpJobTest extends TestCase
         config(['ptp.python' => 'fake']);
         try {
             $job->handle();
+
+            //Check that the job actually cleaned up files after execution.
+            $this->assertFalse(File::exists($this->inputFile.'.json'));
+            $this->assertFalse(File::exists($this->inputFile.'_images.json'));
+            $this->assertFalse(File::exists($this->outputFile));
         } finally {
             File::delete($this->inputFile.'.json');
             File::delete($this->inputFile.'_images.json');
@@ -280,6 +290,11 @@ class PtpJobTest extends TestCase
             $volume = Volume::where('id', $this->volume->id)->first();
             $this->assertFalse(isset($volume->attrs['ptp_job_id']));
 
+            //Check that the job actually cleaned up the files after execution
+            $this->assertFalse(File::exists($this->inputFile.'.json'));
+            $this->assertFalse(File::exists($this->inputFile.'_images.json'));
+            $this->assertFalse(File::exists($this->outputFile));
+
             $imageAnnotationValues = ImageAnnotation::whereIn('image_id', [$this->image->id, $this->image2->id])
                 ->whereNotIn('id', [$this->imageAnnotation->id, $this->imageAnnotation2->id, $this->fakeAnnotation->id])
                 ->select('id', 'points', 'image_id', 'shape_id')
@@ -295,12 +310,12 @@ class PtpJobTest extends TestCase
                 'image_id' => $this->image->id,
                 'shape_id' => Shape::polygonId(),
             ],
-                [
-                    'id' => $ids[1],
-                    'points' => [1, 2, 3, 4],
-                    'image_id' => $this->image2->id,
-                    'shape_id' => Shape::polygonId(),
-                ]];
+            [
+                'id' => $ids[1],
+                'points' => [1, 2, 3, 4],
+                'image_id' => $this->image2->id,
+                'shape_id' => Shape::polygonId(),
+            ]];
 
             $this->assertEquals($imageAnnotationValues->toArray(), $expectedValue);
 

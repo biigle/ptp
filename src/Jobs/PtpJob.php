@@ -109,9 +109,9 @@ class PtpJob extends BaseJob implements ShouldQueue
                 $this->uploadConvertedAnnotations();
             });
         });
-        $this->uploadConvertedAnnotations();
         $this->user->notify(new PtpJobConcluded($this->volume));
         $this->cleanupJob();
+        $this->cleanupFiles();
     }
 
     /**
@@ -233,7 +233,6 @@ class PtpJob extends BaseJob implements ShouldQueue
         $now = Carbon::now();
 
         foreach ($jsonData as $idx => $annotation) {
-
             //It might happen that we are unable to convert some of the point
             //annotations. In this case, we should not upload the data.
             if (is_null($annotation['points'])) {
@@ -311,6 +310,17 @@ class PtpJob extends BaseJob implements ShouldQueue
     }
 
     /**
+     * Cleanup the files that the job might have created
+     */
+    public function cleanupFiles(): void
+    {
+        $files = [$this->outputFile, $this->tmpInputFile, $this->tmpImageInputFile];
+        foreach ($files as $file) {
+            File::delete($file);
+        }
+    }
+
+    /**
      * Cleanup the Job if failed
      *
      * @param  $exception
@@ -319,6 +329,7 @@ class PtpJob extends BaseJob implements ShouldQueue
     {
         $this->user->notify(new PtpJobFailed($this->volume));
         $this->cleanupJob();
+        $this->cleanupFiles();
     }
 
     /**
