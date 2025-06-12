@@ -49,7 +49,8 @@ class PtpController extends Controller
 
          try {
             $jobId = $this->setUniquePtpJob($volume);
-            PtpJob::dispatch($volume, $request->user(), $jobId);
+            PtpJob::dispatch($volume, $request->user(), $jobId)
+                ->onQueue(config('ptp.job_queue'));
         } catch (Exception $e) {
             // If unable to dispatch a PTP Job, reset the PTP Job ID
             $attrs = $volume->attrs;
