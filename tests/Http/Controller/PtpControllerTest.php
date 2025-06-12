@@ -9,6 +9,8 @@ use Biigle\MediaType;
 use Biigle\Shape;
 use Biigle\Volume;
 use Illuminate\Testing\Fluent\AssertableJson;
+use Log;
+use Mockery;
 
 class PtpControllerTest extends ApiTestCase
 {
@@ -112,5 +114,45 @@ class PtpControllerTest extends ApiTestCase
                     ->etc()
         );
     }
-    //TODO: add here case when PTP Job fails
+
+    /**
+     * These are required for the Mock to work. See:
+     * https://phpunit.de/manual/6.5/en/appendixes.annotations.html#appendixes.annotations.preserveGlobalState
+     * https://phpunit.de/manual/6.5/en/appendixes.annotations.html#appendixes.annotations.runInSeparateProcess
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
+    public function testBadJobGenerated()
+    {
+        //Test that if a bad job is generated a job ID is not present
+        $image = Image::factory()->create(['volume_id' => $this->volume()->id]);
+
+        $imageAnnotation = ImageAnnotation::factory()->create([
+            'image_id' => $image->id,
+            'shape_id' => Shape::pointId(),
+        ]);
+
+        $this->beEditor();
+
+        $mock = Mockery::mock('overload:Biigle\Modules\Ptp\Jobs\PtpJob')
+            ->shouldIgnoreMissing()
+            ->shouldReceive('dispatch')
+            ->once()
+            ->andThrow(new \Exception('Mocked job failed!'));
+
+        Log::shouldReceive('error')->once();
+
+        $url = '/api/v1/send-ptp-job/'.$this->volume()->id;
+
+        $this->postJson($url)->assertStatus(500)->assertJson(
+            fn (AssertableJson $json) =>
+                $json->where('message', 'An error occurred. Please try again later.')
+                    ->etc()
+        );
+
+        //$this->volume does not update with attrs
+        $volume = Volume::where('id', $this->volume()->id)->first();
+
+        $this->assertFalse(isset($volume->attrs['ptp_job_id']));
+    }
 }
