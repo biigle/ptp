@@ -7,6 +7,11 @@ return [
     'job_queue' => env('PTP_JOB_QUEUE', 'gpu'),
 
     /*
+    | Queue connection to submit new PTP jobs to.
+    */
+    'job_connection' => env('PTP_JOB_CONNECTION', 'gpu'),
+
+    /*
     | Directory where the temporary files of PTP conversion should be stored.
     */
     'tmp_dir' => env('PTP_TMP_DIR', storage_path('ptp_jobs')),
