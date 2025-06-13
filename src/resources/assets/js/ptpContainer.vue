@@ -3,14 +3,17 @@
         <form class="form-stacked">
             <div class="form-group">
                 <h4>
-                    Create a new Point to Polygon job
+                    Convert Points to Polygons
                     <small>
                         <span class="label label-warning">experimental</span>
                     </small>
                 </h4>
                 <span
                     >Run the point to polygon transformation using Magic
-                    SAM</span
+                    SAM.</span
+                ><br />
+                <span
+                    >By using this tool, you can generate a polygon annotation from existing point annotations. This will not remove the points, which would need to be filtered manually.</span
                 ><br />
             </div>
             <div class="form-group">

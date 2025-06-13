@@ -25,6 +25,10 @@ class PtpServiceProvider extends ServiceProvider
             __DIR__.'/public' => public_path('vendor/ptp'),
         ], 'public');
 
+        $this->publishes([
+            __DIR__.'/resources/assets/images' => public_path('vendor/ptp/images'),
+        ], 'public');
+
         $router->group([
             'namespace' => 'Biigle\Modules\Ptp\Http\Controllers',
             'middleware' => 'web',
@@ -35,6 +39,7 @@ class PtpServiceProvider extends ServiceProvider
         $modules->register('ptp', [
             'viewMixins' => [
                 'volumesSidebar',
+                'manualTutorial',
             ],
             'apidoc' => [__DIR__.'/Http/Controllers/Ptp/'],
         ]);
