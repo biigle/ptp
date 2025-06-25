@@ -13,7 +13,7 @@
                     SAM.</span
                 ><br />
                 <span
-                    >By using this tool, you can generate a polygon annotation from existing point annotations. This will not remove the points, which would need to be filtered manually.</span
+                    >By using this tool, you can generate a polygons from existing point annotations. This will not remove the points, which would need to be filtered manually. You will receive a notification when the conversion is over.</span
                 ><br />
             </div>
             <div class="form-group">

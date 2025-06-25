@@ -13,7 +13,7 @@
         </p>
         <p>
             Access the tool through the tab with the <button class="btn btn-default btn-xs"><i class="fa fa-hat-wizard" aria-hidden="true"></i></button> icon in the volume overview.
-            To use this feature, click on the <button class="btn btn-success btn-xs" aria-hidden="true">Submit</button> button in the tab and the conversion will start; depending on how many images and annotations are included in the volume, it could take a long time.
+            To use this feature, click on the <button class="btn btn-success btn-xs" aria-hidden="true">Submit</button> button in the tab and the conversion will start; depending on how many images and annotations are included in the volume, it could take a long time. You will receive a notification once this conversion is concluded.
         </p>
         <p class="text-center">
             <a href="{{asset('vendor/ptp/images/manual/points.png')}}"><img src="{{asset('vendor/ptp/images/manual/points.png')}}" width="50%"></a>
