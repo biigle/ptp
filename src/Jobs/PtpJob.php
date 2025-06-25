@@ -67,7 +67,7 @@ class PtpJob extends BaseJob implements ShouldQueue
     /**
      * Job used for converting Point annotations to Polygons
      *
-     * @param string $volume Volume for the PTP Job
+     * @param Volume $volume Volume for the PTP Job
      * @param User $user User starting the PtpJob
      * @param string $jobId Uuid associated to the job
      *
