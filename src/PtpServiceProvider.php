@@ -39,6 +39,7 @@ class PtpServiceProvider extends ServiceProvider
         $modules->register('ptp', [
             'viewMixins' => [
                 'volumesSidebar',
+                'volumesScripts',
                 'manualTutorial',
             ],
             'apidoc' => [__DIR__.'/Http/Controllers/Ptp/'],

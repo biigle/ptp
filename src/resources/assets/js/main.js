@@ -1,2 +1,6 @@
-import PtpContainer from './ptpContainer.vue';
-biigle.$mount('ptp-container', PtpContainer);
+import PtpForm from './ptpForm.vue';
+import {VolumeShowPlugins} from './import.js';
+
+if (VolumeShowPlugins) {
+    VolumeShowPlugins.ptpForm = PtpForm;
+}

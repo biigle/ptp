@@ -1,6 +1,6 @@
 <h3>
-    <a href="{{route('manual-tutorials', ['ptp', 'ptp'])}}">Point to Polygon conversion</a>
+    <a href="{{route('manual-tutorials', ['ptp', 'ptp'])}}">Magic SAM Point Conversion</a>
 </h3>
 <p>
-    The Point to Polygon conversion tool is used to generate polygon outlines from point annotations.
+    Convert all point annotations of an image volume to polygon annotations using Magic SAM.
 </p>

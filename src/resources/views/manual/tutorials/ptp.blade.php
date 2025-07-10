@@ -1,37 +1,36 @@
 
 @extends('manual.base')
 
-@section('manual-title', 'Point to Polygon conversion')
+@section('manual-title', 'Magic SAM Point Conversion')
 
 @section('manual-content')
     <div class="row">
         <p class="lead">
-            The Point to Polygon conversion tool
+            Convert all point annotations of an image volume to polygon annotations using Magic SAM.
         </p>
         <p>
-            Many image collections are annotated using only point annotations, which are sometimes not very useful. The Point to Polygon conversion tool allows you to convert existing point annotations in a volume to polygons.
+            Many image collections are annotated using only point annotations, which are sometimes not very useful. The Magic SAM point conversion tool allows you to convert existing point annotations of a whole image volume to polygons.
         </p>
+        <div class="col-xs-6">
+            <p class="text-center text-muted">
+                <a href="{{asset('vendor/ptp/images/manual/points.png')}}"><img src="{{asset('vendor/ptp/images/manual/points.png')}}" width="100%"></a>
+                before
+            </p>
+        </div>
+        <div class="col-xs-6">
+            <p class="text-center text-muted">
+                <a href="{{asset('vendor/ptp/images/manual/polygons.png')}}"><img src="{{asset('vendor/ptp/images/manual/polygons.png')}}" width="100%"></a>
+                after
+            </p>
+        </div>
         <p>
-            Access the tool through the tab with the <button class="btn btn-default btn-xs"><i class="fa fa-hat-wizard" aria-hidden="true"></i></button> icon in the volume overview.
-            To use this feature, click on the <button class="btn btn-success btn-xs" aria-hidden="true">Submit</button> button in the tab and the conversion will start; depending on how many images and annotations are included in the volume, it could take a long time. You will receive a notification once this conversion is concluded.
-        </p>
-        <p class="text-center">
-            <a href="{{asset('vendor/ptp/images/manual/points.png')}}"><img src="{{asset('vendor/ptp/images/manual/points.png')}}" width="50%"></a>
-        </p>
-        <p class="text-center">
-            <i class="fa fa-arrow-down"></i>
-        </p>
-        <p class="text-center">
-            <a href="{{asset('vendor/ptp/images/manual/polygons.png')}}"><img src="{{asset('vendor/ptp/images/manual/polygons.png')}}" width="50%"></a>
+            Access the tool through the tab with the <button class="btn btn-default btn-xs"><i class="fa fa-hat-wizard" aria-hidden="true"></i></button> icon in the volume overview. Click on the <button class="btn btn-success btn-xs" aria-hidden="true">Submit</button> button in the tab and the conversion job will start. Depending on how many images and annotations are included in the volume, the job could take a long time. You will receive a notification once the job is finished.
         </p>
         <p>
              For this conversion to work optimally, there need to be numerous point annotations for each label of interest. Not all of the points may be converted, depending on the algorithm's ability to detect a valid boundary.
         </p>
         <p>
-            <b>Please note that this feature that it will <i>not</i> delete the existing point annotations.</b> To delete the point annotations fast, you can browse them in <a href="{{route('manual-tutorials', ['largo', 'largo'])}}">Largo using the Filter tab.</a>
-        </p>
-        <p>
-             This feature is not available for volumes that include huge images or for video volumes.
+            <b>Existing point annotations will not be deleted as part of a conversion job.</b> To delete the point annotations you can browse them in <a href="{{route('manual-tutorials', ['largo', 'largo'])}}">Largo</a> and filter the annotations by shape.
         </p>
     </div>
 @endsection
