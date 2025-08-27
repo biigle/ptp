@@ -84,6 +84,8 @@ class PtpJobFailed extends Notification
         $array = [
             'title' => 'Your Point To Polygon conversion Job has failed',
             'message' => "The Point To Polygon conversion for volume $this->volumeName has failed.",
+            'action' => 'Show volume',
+            'actionLink' => route('volume', $this->volumeId),
         ];
 
         return $array;

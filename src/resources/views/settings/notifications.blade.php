@@ -21,7 +21,6 @@
 </form>
 
 @push('scripts')
-    {{vite_hot(base_path('vendor/ptp/hot'), ['src/resources/assets/js/main.js'], 'vendor/ptp')}}
     <script type="module">
         biigle.$mount('ptp-notification-settings', {
             mixins: [biigle.$require('core.mixins.notificationSettings')],

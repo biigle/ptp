@@ -314,10 +314,7 @@ class PtpJob extends BaseJob implements ShouldQueue
      */
     public function cleanupFiles(): void
     {
-        $files = [$this->outputFile, $this->tmpInputFile, $this->tmpImageInputFile];
-        foreach ($files as $file) {
-            File::delete($file);
-        }
+        File::delete($this->outputFile, $this->tmpInputFile, $this->tmpImageInputFile);
     }
 
     /**

@@ -58,8 +58,7 @@ class PtpController extends Controller
             unset($attrs['ptp_job_id']);
             $volume->attrs = $attrs;
             $volume->save();
-            Log::error("Unable to generate the PTP conversion job for volume {$volume->id}: {$e->getMessage()}");
-            abort(500, 'An error occurred. Please try again later.');
+            throw $e;
         }
     }
 

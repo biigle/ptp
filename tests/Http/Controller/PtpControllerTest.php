@@ -146,7 +146,7 @@ class PtpControllerTest extends ApiTestCase
 
         $this->postJson($url)->assertStatus(500)->assertJson(
             fn (AssertableJson $json) =>
-                $json->where('message', 'An error occurred. Please try again later.')
+                $json->where('message', 'Mocked job failed!')
                     ->etc()
         );
 
