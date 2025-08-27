@@ -2,9 +2,11 @@
 
 namespace Biigle\Modules\Ptp\Jobs;
 
+use Biigle\Image;
 use Biigle\ImageAnnotation;
 use Biigle\ImageAnnotationLabel;
 use Biigle\Jobs\Job as BaseJob;
+use Biigle\Modules\Largo\Jobs\ProcessAnnotatedImage;
 use Biigle\Modules\Ptp\Exceptions\PythonException;
 use Biigle\Modules\Ptp\Notifications\PtpJobConcluded;
 use Biigle\Modules\Ptp\Notifications\PtpJobFailed;
@@ -255,12 +257,14 @@ class PtpJob extends BaseJob implements ShouldQueue
 
             if ($idx > 0 && ($idx % static::$insertChunkSize) === 0) {
                 $this->insertAnnotationChunk($insertAnnotations, $insertAnnotationLabels);
+                $this->processNewAnnotations($insertAnnotations);
                 $insertAnnotations = [];
                 $insertAnnotationLabels = [];
             }
         }
 
         $this->insertAnnotationChunk($insertAnnotations, $insertAnnotationLabels);
+        $this->processNewAnnotations($insertAnnotations);
     }
 
     /**
@@ -346,6 +350,25 @@ class PtpJob extends BaseJob implements ShouldQueue
             if (!$success) {
                 throw new Exception("Failed to download checkpoint from '{$from}'.");
             }
+        }
+    }
+
+
+    /**
+     * Generate annotation chunks for new annotations
+     *
+     * @param  $a Annotations to process
+     */
+    protected function processNewAnnotations(array $a)
+    {
+
+        $images = array_unique(array_column($a, 'image_id'));
+        foreach ($images as $image_id) {
+            $annotations = array_column(array_filter($a, function($row) use ($image_id) {
+                    return $row["image_id"] === $image_id;
+                }), 'annotation_id');
+
+            ProcessAnnotatedImage::dispatch(Image::findOrFail($image_id), only: $annotations);
         }
     }
 }
