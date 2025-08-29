@@ -6,7 +6,7 @@ use Biigle\Image;
 use Biigle\ImageAnnotation;
 use Biigle\ImageAnnotationLabel;
 use Biigle\Label;
-use Biigle\Modules\Largo\Jobs\ProcessAnnotatedImage;
+use Biigle\Jobs\ProcessAnnotatedImage;
 use Biigle\Modules\Ptp\Exceptions\PythonException;
 use Biigle\Modules\Ptp\Jobs\PtpJob;
 use Biigle\Shape;
