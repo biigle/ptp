@@ -6,6 +6,7 @@ use Biigle\Image;
 use Biigle\ImageAnnotation;
 use Biigle\ImageAnnotationLabel;
 use Biigle\Label;
+use Biigle\Modules\Largo\Jobs\ProcessAnnotatedImage;
 use Biigle\Modules\Ptp\Exceptions\PythonException;
 use Biigle\Modules\Ptp\Jobs\PtpJob;
 use Biigle\Shape;
@@ -13,6 +14,7 @@ use Biigle\User;
 use Biigle\Volume;
 use Exception;
 use File;
+use Queue;
 use Ramsey\Uuid\Uuid;
 use TestCase;
 
@@ -265,8 +267,19 @@ class PtpJobTest extends TestCase
                 ->get()
                 ->toArray();
 
-            $expectedValue = [['label_id' => $this->label->id, 'user_id' => $this->user2->id], ['label_id' => $this->label2->id, 'user_id' => $this->user2->id]];
-            $this->assertEquals($imageAnnotationLabelValues, $expectedValue);
+            $expectedLabelValue = [['label_id' => $this->label->id, 'user_id' => $this->user2->id], ['label_id' => $this->label2->id, 'user_id' => $this->user2->id]];
+            $this->assertEquals($imageAnnotationLabelValues, $expectedLabelValue);
+
+
+            Queue::assertPushed(ProcessAnnotatedImage::class, 2);
+
+            $idx = 0;
+            Queue::assertPushed(ProcessAnnotatedImage::class, function ($job) use ($expectedValue, &$idx) {
+                $this->assertEquals($expectedValue[$idx]['image_id'],  $job->file->id);
+                $this->assertEquals([$expectedValue[$idx]['id']], $job->only);
+                $idx += 1;
+                return true;
+            });
         } finally {
             File::delete($this->outputFile);
         }
@@ -323,8 +336,20 @@ class PtpJobTest extends TestCase
                 ->select('label_id', 'user_id')
                 ->get()
                 ->toArray();
-            $expectedValue = [['label_id' => $this->label->id, 'user_id' => $this->user->id], ['label_id' => $this->label2->id, 'user_id' => $this->user->id]];
-            $this->assertEquals($imageAnnotationLabelValues, $expectedValue);
+            $expectedLabelValue = [['label_id' => $this->label->id, 'user_id' => $this->user->id], ['label_id' => $this->label2->id, 'user_id' => $this->user->id]];
+            $this->assertEquals($imageAnnotationLabelValues, $expectedLabelValue);
+
+
+            Queue::assertPushed(ProcessAnnotatedImage::class, 2);
+
+            $idx = 0;
+            Queue::assertPushed(ProcessAnnotatedImage::class, function ($job) use ($expectedValue, &$idx) {
+                $this->assertEquals($expectedValue[$idx]['image_id'],  $job->file->id);
+                $this->assertEquals([$expectedValue[$idx]['id']], $job->only);
+                $idx += 1;
+                return true;
+            });
+
         } finally {
             File::delete($this->inputFile.'.json');
             File::delete($this->inputFile.'_images.json');
@@ -358,6 +383,7 @@ class MockPtpJob extends PtpJob
             if (!$this->emptyOutput) {
                 $json = json_decode(File::get($this->tmpInputFile), true);
                 foreach ($json as $imageId => $mockValues) {
+
                     foreach ($mockValues as $annotation) {
                         $annotation['points'] = [1, 2, 3, 4];
                         $annotation['image_id'] = $imageId;

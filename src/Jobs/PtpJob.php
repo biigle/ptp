@@ -257,14 +257,12 @@ class PtpJob extends BaseJob implements ShouldQueue
 
             if ($idx > 0 && ($idx % static::$insertChunkSize) === 0) {
                 $this->insertAnnotationChunk($insertAnnotations, $insertAnnotationLabels);
-                $this->processNewAnnotations($insertAnnotations);
                 $insertAnnotations = [];
                 $insertAnnotationLabels = [];
             }
         }
 
         $this->insertAnnotationChunk($insertAnnotations, $insertAnnotationLabels);
-        $this->processNewAnnotations($insertAnnotations);
     }
 
     /**
@@ -279,16 +277,16 @@ class PtpJob extends BaseJob implements ShouldQueue
     ): void {
         ImageAnnotation::insert($annotations);
 
-        $ids = ImageAnnotation::orderBy('id', 'desc')
+        $newImageAnnotations = ImageAnnotation::orderBy('id', 'desc')
             ->take(count($annotations))
-            ->pluck('id')
+            ->get(['id','image_id'])
             ->reverse()
             ->values()
             ->toArray();
 
         #we can safely add confidence because we only have Image annotations
         foreach ($annotationLabels as $idx => &$annotationLabel) {
-            $annotationLabel['annotation_id'] = $ids[$idx];
+            $annotationLabel['annotation_id'] = $newImageAnnotations[$idx]['id'];
             $annotationLabel['confidence'] = 1.0;
         }
 
@@ -297,6 +295,8 @@ class PtpJob extends BaseJob implements ShouldQueue
         $annotationLabels = array_values($annotationLabels);
 
         ImageAnnotationLabel::insert($annotationLabels);
+
+        $this->processNewAnnotations($newImageAnnotations);
     }
 
     /**
@@ -334,7 +334,6 @@ class PtpJob extends BaseJob implements ShouldQueue
     }
 
     /**
-     * Download the checkpoint if not present
      *
      * @param  $from From where to download the checkpoint
      * @param  $to To where to download the checkpoint
@@ -365,8 +364,8 @@ class PtpJob extends BaseJob implements ShouldQueue
         $images = array_unique(array_column($a, 'image_id'));
         foreach ($images as $image_id) {
             $annotations = array_column(array_filter($a, function($row) use ($image_id) {
-                    return $row["image_id"] === $image_id;
-                }), 'annotation_id');
+                    return $row['image_id'] === $image_id;
+                }), 'id');
 
             ProcessAnnotatedImage::dispatch(Image::findOrFail($image_id), only: $annotations);
         }
