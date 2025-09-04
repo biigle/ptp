@@ -62,6 +62,7 @@ class PtpJobTest extends TestCase
 
     private function setUpAnnotations()
     {
+        // When generating these annotations, a ProcessAnnotatedImage job is generated.
         $this->imageAnnotation = ImageAnnotation::factory()->create([
             'image_id' => $this->image->id,
             'shape_id' => Shape::pointId(),
@@ -271,13 +272,22 @@ class PtpJobTest extends TestCase
             $this->assertEquals($imageAnnotationLabelValues, $expectedLabelValue);
 
 
-            Queue::assertPushed(ProcessAnnotatedImage::class, 2);
+            // Here there are 5 jobs because 3 are generated when the setting up annotations
+            Queue::assertPushed(ProcessAnnotatedImage::class, 5);
 
+            //Jobs should appear in the exact order
             $idx = 0;
             Queue::assertPushed(ProcessAnnotatedImage::class, function ($job) use ($expectedValue, &$idx) {
-                $this->assertEquals($expectedValue[$idx]['image_id'],  $job->file->id);
-                $this->assertEquals([$expectedValue[$idx]['id']], $job->only);
+                match ($idx) {
+                    0 => $this->assertJobIsRight($this->imageAnnotation, $job),
+                    1 => $this->assertJobIsRight($this->imageAnnotation2, $job),
+                    2 => $this->assertJobIsRight($this->fakeAnnotation, $job),
+                    3 => $this->assertJobIsRight($expectedValue[0], $job),
+                    4 => $this->assertJobIsRight($expectedValue[1], $job),
+                };
+
                 $idx += 1;
+
                 return true;
             });
         } finally {
@@ -339,13 +349,21 @@ class PtpJobTest extends TestCase
             $expectedLabelValue = [['label_id' => $this->label->id, 'user_id' => $this->user->id], ['label_id' => $this->label2->id, 'user_id' => $this->user->id]];
             $this->assertEquals($imageAnnotationLabelValues, $expectedLabelValue);
 
+            // Here there are 5 jobs because 3 are generated when the setting up annotations
+            Queue::assertPushed(ProcessAnnotatedImage::class, 5);
 
-            Queue::assertPushed(ProcessAnnotatedImage::class, 2);
-
+            //Jobs should appear in the exact order
             $idx = 0;
+
             Queue::assertPushed(ProcessAnnotatedImage::class, function ($job) use ($expectedValue, &$idx) {
-                $this->assertEquals($expectedValue[$idx]['image_id'],  $job->file->id);
-                $this->assertEquals([$expectedValue[$idx]['id']], $job->only);
+                match ($idx) {
+
+                    0 => $this->assertJobIsRight($this->imageAnnotation, $job),
+                    1 => $this->assertJobIsRight($this->imageAnnotation2, $job),
+                    2 => $this->assertJobIsRight($this->fakeAnnotation, $job),
+                    3 => $this->assertJobIsRight($expectedValue[0], $job),
+                    4 => $this->assertJobIsRight($expectedValue[1], $job),
+                };
                 $idx += 1;
                 return true;
             });
@@ -355,6 +373,15 @@ class PtpJobTest extends TestCase
             File::delete($this->inputFile.'_images.json');
             File::delete($this->outputFile);
         }
+    }
+
+
+    public function assertJobIsRight($expectedValue, $job): bool
+    {
+
+        $this->assertEquals($expectedValue['image_id'],  $job->file->id);
+        $this->assertEquals([$expectedValue['id']], $job->only);
+        return true;
     }
 }
 
