@@ -334,6 +334,7 @@ class PtpJob extends BaseJob implements ShouldQueue
     }
 
     /**
+     * Download the checkpoint if not present
      *
      * @param  $from From where to download the checkpoint
      * @param  $to To where to download the checkpoint
