@@ -10,21 +10,16 @@ class PtpJobFailed extends Notification
 {
     /**
      * The name of the volume for which the PTP job was running.
-     *
-     * @var string
      */
     protected string $volumeName;
 
     /**
      * The volume ID for which the PTP job was running.
-     *
-     * @var string
      */
     protected int $volumeId;
     /**
      * Create a new notification instance.
      *
-     * @param string $volumeName
      * @return void
      */
     public function __construct(Volume $volume)
