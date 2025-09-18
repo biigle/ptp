@@ -58,8 +58,8 @@ class PtpJobFailed extends Notification
     public function toMail($notifiable)
     {
         $message = (new MailMessage)
-            ->subject('Your Point To Polygon conversion Job has failed')
-            ->line("The Point To Polygon conversion for volume $this->volumeName has failed.");
+            ->subject('Magic SAM point conversion failed')
+            ->line("The Magic SAM point conversion for volume $this->volumeName has failed.");
 
         if (config('app.url')) {
             $message = $message->action('Show volume', route('volume', $this->volumeId));
@@ -77,8 +77,8 @@ class PtpJobFailed extends Notification
     public function toArray($notifiable)
     {
         $array = [
-            'title' => 'Your Point To Polygon conversion Job has failed',
-            'message' => "The Point To Polygon conversion for volume $this->volumeName has failed.",
+            'title' => 'Magic SAM point conversion failed',
+            'message' => "The Magic SAM point conversion for volume $this->volumeName has failed.",
             'action' => 'Show volume',
             'actionLink' => route('volume', $this->volumeId),
         ];

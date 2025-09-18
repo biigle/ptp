@@ -58,8 +58,8 @@ class PtpJobConcluded extends Notification
     public function toMail($notifiable)
     {
         $message = (new MailMessage)
-            ->subject('Your Point To Polygon conversion Job has concluded succesfully')
-            ->line("The Point To Polygon conversion for volume $this->volumeName has concluded successfully.");
+            ->subject('Magic SAM point conversion finished')
+            ->line("The Magic SAM point conversion for volume $this->volumeName has concluded successfully.");
 
         if (config('app.url')) {
             $message = $message->action('Show volume', route('volume', $this->volumeId));
@@ -77,8 +77,8 @@ class PtpJobConcluded extends Notification
     public function toArray($notifiable)
     {
         $array = [
-            'title' => 'Your Point To Polygon conversion Job has concluded succesfully',
-            'message' => "The Point To Polygon conversion for volume $this->volumeName has concluded successfully.",
+            'title' => 'Magic SAM point conversion finished',
+            'message' => "The Magic SAM point conversion for volume $this->volumeName has concluded successfully.",
             'action' => 'Show volume',
             'actionLink' => route('volume', $this->volumeId),
         ];
