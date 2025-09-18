@@ -1,6 +1,6 @@
-<h4>Point to Polygon notifications</h4>
+<h4>Magic SAM point conversion notifications</h4>
 <p class="text-muted">
-    Notifications when the state of one of your Point to Polygon jobs concludes.
+    Notifications when the state of one of your Magic SAM point conversion jobs changes.
 </p>
 <form id="ptp-notification-settings">
     <div class="form-group">
