@@ -9,7 +9,7 @@ use Biigle\Shape;
 use Biigle\Volume;
 use Exception;
 use Illuminate\Http\Request;
-use Log;
+use Queue;
 use Ramsey\Uuid\Uuid;
 
 /**
@@ -49,9 +49,9 @@ class PtpController extends Controller
 
          try {
             $jobId = $this->setUniquePtpJob($volume);
-            PtpJob::dispatch($volume, $request->user(), $jobId)
-                ->onConnection(config('ptp.job_connection'))
-                ->onQueue(config('ptp.job_queue'));
+            $job = new PtpJob($volume, $request->user(), $jobId);
+            Queue::connection(config('ptp.job_connection'))
+                ->pushOn(config('ptp.job_queue'), $job);
         } catch (Exception $e) {
             // If unable to dispatch a PTP Job, reset the PTP Job ID
             $attrs = $volume->attrs;

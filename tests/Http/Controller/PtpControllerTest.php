@@ -11,6 +11,7 @@ use Biigle\Volume;
 use Illuminate\Testing\Fluent\AssertableJson;
 use Log;
 use Mockery;
+use Queue;
 
 class PtpControllerTest extends ApiTestCase
 {
@@ -115,13 +116,6 @@ class PtpControllerTest extends ApiTestCase
         );
     }
 
-    /**
-     * These are required for the Mock to work. See:
-     * https://phpunit.de/manual/6.5/en/appendixes.annotations.html#appendixes.annotations.preserveGlobalState
-     * https://phpunit.de/manual/6.5/en/appendixes.annotations.html#appendixes.annotations.runInSeparateProcess
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testBadJobGenerated()
     {
         //Test that if a bad job is generated a job ID is not present
@@ -134,10 +128,7 @@ class PtpControllerTest extends ApiTestCase
 
         $this->beEditor();
 
-        $mock = Mockery::mock('overload:Biigle\Modules\Ptp\Jobs\PtpJob')
-            ->shouldIgnoreMissing()
-            ->shouldReceive('dispatch')
-            ->once()
+        Queue::shouldReceive('connection')
             ->andThrow(new \Exception('Mocked job failed!'));
 
         Log::shouldReceive('error')->once();
