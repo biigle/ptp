@@ -362,13 +362,13 @@ class PtpJob extends BaseJob implements ShouldQueue
     protected function processNewAnnotations(array $a)
     {
 
-        $images = array_unique(array_column($a, 'image_id'));
-        foreach ($images as $image_id) {
-            $annotations = array_column(array_filter($a, function($row) use ($image_id) {
-                    return $row['image_id'] === $image_id;
-                }), 'id');
+        $annotations = collect($a)
+            ->groupBy('image_id')
+            ->map(fn ($an) => $an->pluck('id'));
+        $images = Image::whereIn('id', $annotations->keys())->get();
 
-            ProcessAnnotatedImage::dispatch(Image::findOrFail($image_id), only: $annotations);
+        foreach ($images as $image) {
+            ProcessAnnotatedImage::dispatch($image, only: $annotations->get($image->id)->toArray());
         }
     }
 }
