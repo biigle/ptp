@@ -79,7 +79,6 @@ class PtpJob extends BaseJob implements ShouldQueue
         public User $user,
         public string $jobId,
     ) {
-        $this->volume = $volume;
 
         //$inputFile.'.json' will be used for image annotations, $inputFile.'_images.json' for image paths
         $inputFile = 'ptp/input-files/'.$volume->id;
