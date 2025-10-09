@@ -186,7 +186,7 @@ class PtpJobTest extends TestCase
         $job = new MockPtpJob($this->volume, $this->user, $this->uuid);
         try {
             $this->setUpAnnotations();
-            $imageData = $job->generateInputFile();
+            $imageData = $job->generateInputFile($this->volume->images());
             $this->assertTrue(isset($imageData[$this->image->id]));
 
             $imageData[$this->image->id] = $imageData[$this->image->id]->pluck('id');

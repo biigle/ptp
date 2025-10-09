@@ -119,9 +119,10 @@ class PtpJob extends BaseJob implements ShouldQueue
     /**
      * Generate the input File containing data for the execution of the job
      *
+     * @param $chunk Collection of images to process at a time
      * @return array
      */
-    public function generateInputFile(): array
+    public function generateInputFile($chunk): array
     {
         $imageAnnotationArray = [];
 
@@ -130,6 +131,7 @@ class PtpJob extends BaseJob implements ShouldQueue
         $annotations = ImageAnnotation::join('image_annotation_labels', 'image_annotations.id', '=', 'image_annotation_labels.annotation_id')
             ->join('images', 'image_annotations.image_id', '=', 'images.id')
             ->where('images.volume_id', $this->volume->id)
+            ->whereIn('image_annotations.image_id', $chunk->pluck('id'))
             ->where('image_annotations.shape_id', $pointShapeId)
             ->select('image_annotations.id as id', 'images.id as image_id', 'image_annotations.points as points', 'image_annotations.shape_id as shape_id', 'image_annotation_labels.label_id as label_id')
             ->with('file')
