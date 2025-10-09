@@ -89,8 +89,6 @@ class PtpJob extends BaseJob implements ShouldQueue
         $this->outputFile = config('ptp.temp_dir').'/'.$outputFile;
         $this->tmpInputFile = config('ptp.temp_dir').'/'.$inputFile.'.json';
         $this->tmpImageInputFile = config('ptp.temp_dir').'/'.$inputFile.'_images.json';
-        $this->user = $user;
-        $this->jobId = $jobId;
     }
 
     /**
