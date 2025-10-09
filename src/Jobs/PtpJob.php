@@ -10,6 +10,7 @@ use Biigle\Jobs\ProcessAnnotatedImage;
 use Biigle\Modules\Ptp\Exceptions\PythonException;
 use Biigle\Modules\Ptp\Notifications\PtpJobConcluded;
 use Biigle\Modules\Ptp\Notifications\PtpJobFailed;
+use Biigle\Modules\Ptp\Traits\ParseConvertedAnnotations;
 use Biigle\Shape;
 use Biigle\User;
 use Biigle\Volume;
@@ -27,7 +28,7 @@ use Throwable;
 
 class PtpJob extends BaseJob implements ShouldQueue
 {
-    use Batchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Batchable, InteractsWithQueue, Queueable, SerializesModels, ParseConvertedAnnotations;
 
     /**
      * File where the input data for the Python script will be kept
@@ -83,7 +84,7 @@ class PtpJob extends BaseJob implements ShouldQueue
         //$inputFile.'.json' will be used for image annotations, $inputFile.'_images.json' for image paths
         $inputFile = 'ptp/input-files/'.$volume->id;
 
-        $outputFile = 'ptp/'.$volume->id.'_converted_annotations.json';
+        $outputFile = 'ptp/'.$volume->id.'_converted_annotations.csv';
 
         $this->outputFile = config('ptp.temp_dir').'/'.$outputFile;
         $this->tmpInputFile = config('ptp.temp_dir').'/'.$inputFile.'.json';
@@ -220,48 +221,45 @@ class PtpJob extends BaseJob implements ShouldQueue
      */
     public function uploadConvertedAnnotations(): void
     {
-        $jsonData = json_decode(File::get($this->outputFile), true);
 
-        if (count($jsonData) == 0) {
-            throw new Exception('No annotations were converted!');
-        }
+        foreach ($this->iterateOverCsvFile($this->outputFile) as $annotationData) {
+            $polygonShape = Shape::polygonId();
 
-        $polygonShape = Shape::polygonId();
+            $insertAnnotations = [];
+            $insertAnnotationLabels = [];
 
-        $insertAnnotations = [];
-        $insertAnnotationLabels = [];
+            $now = Carbon::now();
 
-        $now = Carbon::now();
+            foreach ($annotationData as $idx => $annotation) {
+                //It might happen that we are unable to convert some of the point
+                //annotations. In this case, we should not upload the data.
+                if (is_null($annotation['points'])) {
+                    continue;
+                }
 
-        foreach ($jsonData as $idx => $annotation) {
-            //It might happen that we are unable to convert some of the point
-            //annotations. In this case, we should not upload the data.
-            if (is_null($annotation['points'])) {
-                continue;
+                $newAnnotation = [
+                    'image_id' => $annotation['image_id'],
+                    'points' => json_encode($annotation['points']),
+                    'shape_id' => $polygonShape,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+
+                $insertAnnotations[] = $newAnnotation;
+                $insertAnnotationLabels[] = [
+                    'label_id' => $annotation['label_id'],
+                    'user_id' => $this->user->id,
+                ];
+
+                if ($idx > 0 && ($idx % static::$insertChunkSize) === 0) {
+                    $this->insertAnnotationChunk($insertAnnotations, $insertAnnotationLabels);
+                    $insertAnnotations = [];
+                    $insertAnnotationLabels = [];
+                }
             }
 
-            $newAnnotation = [
-                'image_id' => $annotation['image_id'],
-                'points' => json_encode($annotation['points']),
-                'shape_id' => $polygonShape,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ];
-
-            $insertAnnotations[] = $newAnnotation;
-            $insertAnnotationLabels[] = [
-                'label_id' => $annotation['label_id'],
-                'user_id' => $this->user->id,
-            ];
-
-            if ($idx > 0 && ($idx % static::$insertChunkSize) === 0) {
-                $this->insertAnnotationChunk($insertAnnotations, $insertAnnotationLabels);
-                $insertAnnotations = [];
-                $insertAnnotationLabels = [];
-            }
+            $this->insertAnnotationChunk($insertAnnotations, $insertAnnotationLabels);
         }
-
-        $this->insertAnnotationChunk($insertAnnotations, $insertAnnotationLabels);
     }
 
     /**
@@ -288,10 +286,6 @@ class PtpJob extends BaseJob implements ShouldQueue
             $annotationLabel['annotation_id'] = $newImageAnnotations[$idx]['id'];
             $annotationLabel['confidence'] = 1.0;
         }
-
-        // Flatten. Use array_values to prevent accidental array unpacking with string
-        // keys (which makes the linter complain).
-        $annotationLabels = array_values($annotationLabels);
 
         ImageAnnotationLabel::insert($annotationLabels);
 

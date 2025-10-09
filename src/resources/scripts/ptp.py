@@ -810,5 +810,5 @@ if __name__ == "__main__":
             resulting_annotations += process_image(annotation, image, image_id, sam)
     os.makedirs(os.path.dirname(args.output_file), exist_ok=True)
     pd.DataFrame(resulting_annotations).loc[
-        :, ["image_id", "label_id", "annotation_id", "confidence", "points"]
-    ].to_json(args.output_file, orient="records")
+        :, ["annotation_id", "points", "image_id", "label_id"]
+    ].to_csv(args.output_file, index=False)

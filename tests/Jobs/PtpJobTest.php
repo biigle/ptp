@@ -44,7 +44,7 @@ class PtpJobTest extends TestCase
         ]);
 
         $this->inputFile = config('ptp.temp_dir').'/ptp/input-files/'.$this->volume->id;
-        $this->outputFile = config('ptp.temp_dir').'/'.'ptp/'.$this->volume->id.'_converted_annotations.json';
+        $this->outputFile = config('ptp.temp_dir').'/'.'ptp/'.$this->volume->id.'_converted_annotations.csv';
 
         if (!File::exists(dirname($this->inputFile))) {
             File::makeDirectory(dirname($this->inputFile), 0700, true, true);
@@ -129,12 +129,41 @@ class PtpJobTest extends TestCase
             $this->volume,
             $this->user,
             $this->uuid,
+            false,
+        );
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage("Unable to find output file $this->outputFile");
+        try {
+            $this->setUpAnnotations();
+            $job->handle();
+            $this->assertTrue($job->pythonCalled);
+            $volume = Volume::where('id', $this->volume->id)->first();
+            $this->assertFalse(isset($volume->attrs['ptp_job_id']));
+
+            //Check that the job actually cleaned up the files after execution.
+            $this->assertFalse(File::exists($this->inputFile.'.json'));
+            $this->assertFalse(File::exists($this->inputFile.'_images.json'));
+            $this->assertFalse(File::exists($this->outputFile));
+        } finally {
+            File::delete($this->inputFile.'.json');
+            File::delete($this->inputFile.'_images.json');
+        }
+    }
+
+    public function testPtpHandleWithEmptyConvertedFiles(): void
+    {
+        //Test that the PTP job correctly calls the handle, fails without converted files and cleans up the volume
+        $job = new MockPtpJob(
+            $this->volume,
+            $this->user,
+            $this->uuid,
             true,
             true,
         );
 
         $this->expectException(Exception::class);
-        $this->expectExceptionMessage('No annotations were converted!');
+        $this->expectExceptionMessage("No annotations were converted!");
         try {
             $this->setUpAnnotations();
             $job->handle();
@@ -220,24 +249,43 @@ class PtpJobTest extends TestCase
         $job = new MockPtpJob($this->volume, $this->user2, $this->uuid);
         $this->setUpAnnotations();
         try {
-            $outputFileContent = [[
-                'points' => [1, 2, 3, 4, 5, 6],
-                'image_id' => $this->image->id,
-                'label_id' => $this->label->id,
-            ],
+            $outputFileContent = [
                 [
+                    'annotation_id' => null,
+                    'points' => [1, 2, 3, 4, 5, 6],
+                    'image_id' => $this->image->id,
+                    'label_id' => $this->label->id,
+                ],
+                [
+                    'annotation_id' => null,
                     'points' => [1, 2, 3, 4, 5, 6],
                     'image_id' => $this->image2->id,
                     'label_id' => $this->label2->id,
                 ],
                 //This annotation should not be uploaded
                 [
+                    'annotation_id' => null,
                     'points' => null,
                     'image_id' => $this->image2->id,
                     'label_id' => $this->label2->id,
-                ]];
+                ],
+            ];
 
-            File::put($this->outputFile, json_encode($outputFileContent));
+            $header = implode(',', [
+                'annotation_id',
+                'points',
+                'image_id',
+                'label_id'
+            ]);
+            $csvArray = array_map(function($row) {
+                if (!is_null($row['points'])) {
+                    $row['points'] = '"['.implode(',',  $row['points']).']"' ;
+                }
+                return implode(',', $row);
+            }, $outputFileContent);
+            $csv = $header."\n".implode("\n", $csvArray);
+            File::put($this->outputFile, $csv);
+
             $job->uploadConvertedAnnotations();
 
             $imageAnnotationValues = ImageAnnotation::whereIn('image_id', [$this->image->id, $this->image2->id])
@@ -357,7 +405,6 @@ class PtpJobTest extends TestCase
 
             Queue::assertPushed(ProcessAnnotatedImage::class, function ($job) use ($expectedValue, &$idx) {
                 match ($idx) {
-
                     0 => $this->assertJobIsRight($this->imageAnnotation, $job),
                     1 => $this->assertJobIsRight($this->imageAnnotation2, $job),
                     2 => $this->assertJobIsRight($this->fakeAnnotation, $job),
@@ -379,7 +426,7 @@ class PtpJobTest extends TestCase
     public function assertJobIsRight($expectedValue, $job): bool
     {
 
-        $this->assertEquals($expectedValue['image_id'],  $job->file->id);
+        $this->assertEquals($expectedValue['image_id'], $job->file->id);
         $this->assertEquals([$expectedValue['id']], $job->only);
         return true;
     }
@@ -407,19 +454,32 @@ class MockPtpJob extends PtpJob
 
         if ($this->generateOutput) {
             $output = [];
+            $csv = '';
             if (!$this->emptyOutput) {
                 $json = json_decode(File::get($this->tmpInputFile), true);
                 foreach ($json as $imageId => $mockValues) {
 
                     foreach ($mockValues as $annotation) {
-                        $annotation['points'] = [1, 2, 3, 4];
-                        $annotation['image_id'] = $imageId;
-                        $annotation['label_id'] = $annotation['label'];
-                        array_push($output, $annotation);
+                        $annotationToUpload = [
+                            'annotation_id' => $annotation['annotation_id'],
+                            'points' => [1, 2, 3, 4],
+                            'image_id' => $imageId,
+                            'label_id' => $annotation['label'],
+                        ];
+                        array_push($output, $annotationToUpload);
                     }
                 }
+                $header = implode(',', $this->annotatedFileColumns);
+                $csvArray = array_map(function($row) {
+                    if (!is_null($row['points'])) {
+                        $row['points'] = '"['.implode(',',  $row['points']).']"';
+                    }
+                    return implode(',', $row);
+                }, $output);
+                $csv = $header."\n".implode("\n", $csvArray);
             }
-            File::put($this->outputFile, json_encode($output));
+
+            File::put($this->outputFile, $csv);
         }
     }
 }
