@@ -11,7 +11,6 @@ trait ParseConvertedAnnotations {
 
     /**
      * List of columns of the CSV file
-     * @var array
      */
     protected $annotatedFileColumns = [
         'annotation_id',
@@ -22,7 +21,6 @@ trait ParseConvertedAnnotations {
 
     /**
      * Number of lines to be processed when parsing the results of the PTP conversion
-     * @var int
      */
     public static int $lineChunkSize = 10000;
 
