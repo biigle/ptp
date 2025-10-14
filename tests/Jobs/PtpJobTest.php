@@ -5,8 +5,8 @@ namespace Biigle\Tests\Modules\Ptp\Jobs;
 use Biigle\Image;
 use Biigle\ImageAnnotation;
 use Biigle\ImageAnnotationLabel;
-use Biigle\Label;
 use Biigle\Jobs\ProcessAnnotatedImage;
+use Biigle\Label;
 use Biigle\Modules\Ptp\Exceptions\PythonException;
 use Biigle\Modules\Ptp\Jobs\PtpJob;
 use Biigle\Shape;
@@ -277,9 +277,9 @@ class PtpJobTest extends TestCase
                 'image_id',
                 'label_id'
             ]);
-            $csvArray = array_map(function($row) {
+            $csvArray = array_map(function ($row) {
                 if (!is_null($row['points'])) {
-                    $row['points'] = '"['.implode(',',  $row['points']).']"' ;
+                    $row['points'] = '"['.implode(',', $row['points']).']"' ;
                 }
                 return implode(',', $row);
             }, $outputFileContent);
@@ -381,12 +381,12 @@ class PtpJobTest extends TestCase
                 'image_id' => $this->image->id,
                 'shape_id' => Shape::polygonId(),
             ],
-            [
-                'id' => $ids[1],
-                'points' => [1, 2, 3, 4],
-                'image_id' => $this->image2->id,
-                'shape_id' => Shape::polygonId(),
-            ]];
+                [
+                    'id' => $ids[1],
+                    'points' => [1, 2, 3, 4],
+                    'image_id' => $this->image2->id,
+                    'shape_id' => Shape::polygonId(),
+                ]];
 
             $this->assertEquals($imageAnnotationValues->toArray(), $expectedValue);
 
@@ -422,7 +422,6 @@ class PtpJobTest extends TestCase
         }
     }
 
-
     public function assertJobIsRight($expectedValue, $job): bool
     {
 
@@ -436,8 +435,7 @@ class MockPtpJob extends PtpJob
 {
     public bool $pythonCalled = false;
 
-    public function __construct(
-        public Volume $volume,
+    public function __construct( public Volume $volume,
         public User $user,
         public string $jobId,
         public bool $generateOutput = false,
@@ -453,30 +451,9 @@ class MockPtpJob extends PtpJob
         $this->pythonCalled = true;
 
         if ($this->generateOutput) {
-            $output = [];
             $csv = '';
             if (!$this->emptyOutput) {
-                $json = json_decode(File::get($this->tmpInputFile), true);
-                foreach ($json as $imageId => $mockValues) {
-
-                    foreach ($mockValues as $annotation) {
-                        $annotationToUpload = [
-                            'annotation_id' => $annotation['annotation_id'],
-                            'points' => [1, 2, 3, 4],
-                            'image_id' => $imageId,
-                            'label_id' => $annotation['label'],
-                        ];
-                        array_push($output, $annotationToUpload);
-                    }
-                }
-                $header = implode(',', $this->annotatedFileColumns);
-                $csvArray = array_map(function($row) {
-                    if (!is_null($row['points'])) {
-                        $row['points'] = '"['.implode(',',  $row['points']).']"';
-                    }
-                    return implode(',', $row);
-                }, $output);
-                $csv = $header."\n".implode("\n", $csvArray);
+                $csv = File::get(__DIR__."/../files/test.csv");
             }
 
             File::put($this->outputFile, $csv);

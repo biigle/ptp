@@ -10,7 +10,6 @@ use Biigle\Jobs\ProcessAnnotatedImage;
 use Biigle\Modules\Ptp\Exceptions\PythonException;
 use Biigle\Modules\Ptp\Notifications\PtpJobConcluded;
 use Biigle\Modules\Ptp\Notifications\PtpJobFailed;
-use Biigle\Modules\Ptp\Traits\ParseConvertedAnnotations;
 use Biigle\Shape;
 use Biigle\User;
 use Biigle\Volume;
@@ -19,16 +18,18 @@ use DB;
 use Exception;
 use File;
 use FileCache;
+use Generator;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use SplFileObject;
 use Throwable;
 
 class PtpJob extends BaseJob implements ShouldQueue
 {
-    use Batchable, InteractsWithQueue, Queueable, SerializesModels, ParseConvertedAnnotations;
+    use Batchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /**
      * File where the input data for the Python script will be kept
@@ -49,16 +50,16 @@ class PtpJob extends BaseJob implements ShouldQueue
     protected string $outputFile;
 
     /**
-     * Number of annotations to be inserted per chunk
-     * @var int
-     */
-    public static int $insertChunkSize = 5000;
-
-    /**
      * Number of images to be processed per chunk
      * @var int
      */
     public static int $imageChunkSize = 100;
+
+    /**
+     * Number of annotations to be inserted per chunk
+     * @var int
+     */
+    public static int $insertChunkSize = 50000;
 
     /**
      * Ignore this job if the project or volume does not exist any more.
@@ -66,6 +67,16 @@ class PtpJob extends BaseJob implements ShouldQueue
      * @var bool
      */
     protected $deleteWhenMissingModels = true;
+
+    /**
+     * List of columns of the CSV file
+     */
+    protected $annotatedFileColumns = [
+        'annotation_id',
+        'points',
+        'image_id',
+        'label_id',
+    ];
 
     /**
      * Job used for converting Point annotations to Polygons
@@ -221,52 +232,49 @@ class PtpJob extends BaseJob implements ShouldQueue
      */
     public function uploadConvertedAnnotations(): void
     {
-
-        foreach ($this->iterateOverCsvFile($this->outputFile) as $annotationData) {
+        $insertAnnotations = [];
+        $insertAnnotationLabels = [];
+        foreach ($this->iterateOverCsvFile($this->outputFile) as $idx => $annotation) {
             $polygonShape = Shape::polygonId();
-
-            $insertAnnotations = [];
-            $insertAnnotationLabels = [];
 
             $now = Carbon::now();
 
-            foreach ($annotationData as $idx => $annotation) {
-                //It might happen that we are unable to convert some of the point
-                //annotations. In this case, we should not upload the data.
-                if (is_null($annotation['points'])) {
-                    continue;
-                }
-
-                $newAnnotation = [
-                    'image_id' => $annotation['image_id'],
-                    'points' => json_encode($annotation['points']),
-                    'shape_id' => $polygonShape,
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ];
-
-                $insertAnnotations[] = $newAnnotation;
-                $insertAnnotationLabels[] = [
-                    'label_id' => $annotation['label_id'],
-                    'user_id' => $this->user->id,
-                ];
-
-                if ($idx > 0 && ($idx % static::$insertChunkSize) === 0) {
-                    $this->insertAnnotationChunk($insertAnnotations, $insertAnnotationLabels);
-                    $insertAnnotations = [];
-                    $insertAnnotationLabels = [];
-                }
+            //It might happen that we are unable to convert some of the point
+            //annotations. In this case, we should not upload the data.
+            if (is_null($annotation['points'])) {
+                continue;
             }
 
+            $newAnnotation = [
+                'image_id' => $annotation['image_id'],
+                'points' => json_encode($annotation['points']),
+                'shape_id' => $polygonShape,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+
+            $insertAnnotations[] = $newAnnotation;
+            $insertAnnotationLabels[] = [
+                'label_id' => intval($annotation['label_id']),
+                'user_id' => $this->user->id,
+            ];
+
+            if ($idx > 0 && ($idx % static::$insertChunkSize) === 0) {
+                $this->insertAnnotationChunk($insertAnnotations, $insertAnnotationLabels);
+                $insertAnnotations = [];
+                $insertAnnotationLabels = [];
+            }
+        }
+        if (count($insertAnnotations) > 0) {
             $this->insertAnnotationChunk($insertAnnotations, $insertAnnotationLabels);
         }
     }
 
     /**
-     * Insert chunk of annotations in the DB
+     * Insert annotation in the DB
      *
-     * @param array $annotations Annotations to upload
-     * @param array $annotationLabels Annotation labels to upload
+     * @param array $annotations Annotation to upload
+     * @param array $annotationLabels Annotation label to upload
      */
     protected function insertAnnotationChunk(
         array $annotations,
@@ -276,7 +284,7 @@ class PtpJob extends BaseJob implements ShouldQueue
 
         $newImageAnnotations = ImageAnnotation::orderBy('id', 'desc')
             ->take(count($annotations))
-            ->get(['id','image_id'])
+            ->get(['id', 'image_id'])
             ->reverse()
             ->values()
             ->toArray();
@@ -346,7 +354,6 @@ class PtpJob extends BaseJob implements ShouldQueue
         }
     }
 
-
     /**
      * Generate annotation chunks for new annotations
      *
@@ -363,5 +370,59 @@ class PtpJob extends BaseJob implements ShouldQueue
         foreach ($images as $image) {
             ProcessAnnotatedImage::dispatch($image, only: $annotations->get($image->id)->toArray());
         }
+    }
+
+    /**
+     * Create a generator that iterates over $lineChunkSize lines of a CSV file containing annotation results from the PTP conversion.
+     * @param $file CSV file to open
+     * @return Generator
+     */
+    protected function iterateOverCsvFile(
+        string $file,
+    ): Generator {
+        if (File::missing($file)) {
+            throw new Exception("Unable to find output file $file");
+        }
+
+        if (File::size($file) == 0) {
+            throw new Exception('No annotations were converted!');
+        }
+
+        $iterator = $this->getCsvFile($file);
+
+        $header = $iterator->fgetcsv();
+        if ($header !== $this->annotatedFileColumns) {
+            throw new Exception("Annotation file $file is malformed");
+        }
+
+        while ($data = $iterator->fgetcsv()) {
+
+            #Can be caused by trailing newline.
+            if (count($data) == 1 && is_null($data[0])) {
+                continue;
+            }
+
+            #Malformed row. Avoid handling it.
+            if (count($data) != count($header)) {
+                throw Exception("Malformed results row!");
+            }
+
+            $tmpChunk = array_combine($header, $data);
+            $tmpChunk['points'] = json_decode($tmpChunk['points']);
+            yield $tmpChunk;
+        }
+    }
+
+    /**
+     * Open A CSV file.
+     * @param $file CSV file to open
+     * @return SplFileObject
+     */
+    protected static function getCsvFile(string $file): SplFileObject
+    {
+        $file = new SplFileObject($file);
+        $file->setFlags(SplFileObject::READ_CSV);
+
+        return $file;
     }
 }
