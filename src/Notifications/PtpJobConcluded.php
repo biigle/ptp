@@ -17,6 +17,7 @@ class PtpJobConcluded extends Notification
      * The volume ID for which the PTP job was running.
      */
     protected int $volumeId;
+
     /**
      * Create a new notification instance.
      *

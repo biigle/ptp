@@ -10,7 +10,6 @@ use Biigle\Shape;
 use Biigle\Volume;
 use Illuminate\Testing\Fluent\AssertableJson;
 use Log;
-use Mockery;
 use Queue;
 
 class PtpControllerTest extends ApiTestCase

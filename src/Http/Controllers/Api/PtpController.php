@@ -47,7 +47,7 @@ class PtpController extends Controller
             abort(400, 'No point annotations to convert!');
         }
 
-         try {
+        try {
             $jobId = $this->setUniquePtpJob($volume);
             $job = new PtpJob($volume, $request->user(), $jobId);
             Queue::connection(config('ptp.job_connection'))
