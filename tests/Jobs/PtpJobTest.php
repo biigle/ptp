@@ -435,7 +435,8 @@ class MockPtpJob extends PtpJob
 {
     public bool $pythonCalled = false;
 
-    public function __construct( public Volume $volume,
+    public function __construct(
+        public Volume $volume,
         public User $user,
         public string $jobId,
         public bool $generateOutput = false,
@@ -456,7 +457,7 @@ class MockPtpJob extends PtpJob
                 $csv .= 'annotation_id,points,image_id,label_id';
                 $json = json_decode(File::get($this->tmpInputFile), true);
                 foreach ($json as $imageId => $mockValues) {
-                   foreach ($mockValues as $annotation) {
+                    foreach ($mockValues as $annotation) {
                         $csv .= "\n{$annotation['annotation_id']},\"[1,2,3,4]\",{$imageId},{$annotation['label']}";
                     }
                 }
