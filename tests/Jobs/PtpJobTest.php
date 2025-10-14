@@ -453,9 +453,14 @@ class MockPtpJob extends PtpJob
         if ($this->generateOutput) {
             $csv = '';
             if (!$this->emptyOutput) {
-                $csv = File::get(__DIR__."/../files/test.csv");
+                $csv .= 'annotation_id,points,image_id,label_id';
+                $json = json_decode(File::get($this->tmpInputFile), true);
+                foreach ($json as $imageId => $mockValues) {
+                   foreach ($mockValues as $annotation) {
+                        $csv .= "\n{$annotation['annotation_id']},\"[1,2,3,4]\",{$imageId},{$annotation['label']}";
+                    }
+                }
             }
-
             File::put($this->outputFile, $csv);
         }
     }
