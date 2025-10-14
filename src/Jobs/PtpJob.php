@@ -59,7 +59,7 @@ class PtpJob extends BaseJob implements ShouldQueue
      * Number of annotations to be inserted per chunk
      * @var int
      */
-    public static int $insertChunkSize = 50000;
+    public static int $insertChunkSize = 5000;
 
     /**
      * Ignore this job if the project or volume does not exist any more.
@@ -373,7 +373,7 @@ class PtpJob extends BaseJob implements ShouldQueue
     }
 
     /**
-     * Create a generator that iterates over $lineChunkSize lines of a CSV file containing annotation results from the PTP conversion.
+     * Create a generator that iterates the lines of a CSV file containing annotation results from the PTP conversion.
      * @param $file CSV file to open
      * @return Generator
      */
@@ -418,7 +418,7 @@ class PtpJob extends BaseJob implements ShouldQueue
      * @param $file CSV file to open
      * @return SplFileObject
      */
-    protected static function getCsvFile(string $file): SplFileObject
+    protected function getCsvFile(string $file): SplFileObject
     {
         $file = new SplFileObject($file);
         $file->setFlags(SplFileObject::READ_CSV);
