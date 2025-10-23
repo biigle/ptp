@@ -402,11 +402,6 @@ class PtpJob extends BaseJob implements ShouldQueue
                 continue;
             }
 
-            #Malformed row. Avoid handling it.
-            if (count($data) != count($header)) {
-                throw Exception("Malformed results row!");
-            }
-
             $tmpChunk = array_combine($header, $data);
             $tmpChunk['points'] = json_decode($tmpChunk['points']);
             yield $tmpChunk;
