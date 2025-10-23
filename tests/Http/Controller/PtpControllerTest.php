@@ -1,0 +1,148 @@
+<?php
+
+namespace Biigle\Tests\Modules\Ptp\Controller;
+
+use ApiTestCase;
+use Biigle\Image;
+use Biigle\ImageAnnotation;
+use Biigle\MediaType;
+use Biigle\Shape;
+use Biigle\Volume;
+use Illuminate\Testing\Fluent\AssertableJson;
+use Log;
+use Queue;
+
+class PtpControllerTest extends ApiTestCase
+{
+    public function testCreateJob(): void
+    {
+        $image = Image::factory()->create(['volume_id' => $this->volume()->id]);
+
+        //Test creating a Job with different types of users
+        $imageAnnotation = ImageAnnotation::factory()->create([
+            'image_id' => $image->id,
+            'shape_id' => Shape::pointId(),
+        ]);
+
+        $url = '/api/v1/send-ptp-job/'.$this->volume()->id;
+
+        $this->beGlobalGuest();
+        $this->postJson($url)->assertStatus(403);
+
+        $this->beUser();
+        $this->postJson($url)->assertStatus(403);
+
+        $this->beEditor();
+        $this->postJson($url)->assertStatus(200);
+    }
+
+    public function testSetPtpJobId(): void
+    {
+        //Test that when creating a Job a ptp_job_id is set
+        $image = Image::factory()->create(['volume_id' => $this->volume()->id]);
+
+        $imageAnnotation = ImageAnnotation::factory()->create([
+            'image_id' => $image->id,
+            'shape_id' => Shape::pointId(),
+        ]);
+
+        $url = '/api/v1/send-ptp-job/'.$this->volume()->id;
+
+        $this->beEditor();
+        $this->postJson($url)->assertStatus(200);
+
+        //$this->volume does not update with attrs
+        $volume = Volume::where('id', $this->volume()->id)->first();
+
+        $this->assertTrue(isset($volume->attrs['ptp_job_id']));
+
+        //If a ptp_job_id is set on a volume, we should get an error
+        $this->postJson($url)->assertStatus(400)->assertJson(
+            fn (AssertableJson $json) =>
+                $json->where('message', 'Another point to polygon conversion job is running in this volume!')
+                    ->etc()
+        );
+    }
+
+    public function testVideoVolumes()
+    {
+        $this->volume(['media_type_id' => MediaType::videoId()]);
+
+        $this->beEditor();
+
+        $url = '/api/v1/send-ptp-job/'.$this->volume()->id;
+
+        $this->postJson($url)->assertStatus(400)->assertJson(
+            fn (AssertableJson $json) =>
+                $json->where('message', 'The point to polygon conversion cannot be executed on video volumes or volumes with very large images.')
+                    ->etc()
+        );
+    }
+
+    public function testTiledImages()
+    {
+        $image = Image::factory()->create([
+            'volume_id' => $this->volume()->id,
+            'tiled' => true,
+        ]);
+
+        $imageAnnotation = ImageAnnotation::factory()->create([
+            'image_id' => $image->id,
+            'shape_id' => Shape::pointId(),
+        ]);
+
+        $this->beEditor();
+
+        $url = '/api/v1/send-ptp-job/'.$this->volume()->id;
+
+        $this->postJson($url)->assertStatus(400)->assertJson(
+            fn (AssertableJson $json) =>
+                $json->where('message', 'The point to polygon conversion cannot be executed on video volumes or volumes with very large images.')
+                    ->etc()
+        );
+    }
+
+    public function testNoImageAnnotations()
+    {
+        $this->beEditor();
+
+        $url = '/api/v1/send-ptp-job/'.$this->volume()->id;
+
+        $this->postJson($url)->assertStatus(400)->assertJson(
+            fn (AssertableJson $json) =>
+                $json->where('message', 'No point annotations to convert!')
+                    ->etc()
+        );
+    }
+
+    public function testBadJobGenerated()
+    {
+        //Test that if a bad job is generated a job ID is not present
+        $image = Image::factory()->create(['volume_id' => $this->volume()->id]);
+
+        $imageAnnotation = ImageAnnotation::factory()->create([
+            'image_id' => $image->id,
+            'shape_id' => Shape::pointId(),
+        ]);
+
+        $this->beEditor();
+
+        Queue::shouldReceive('connection')
+            ->andThrow(new \Exception('Mocked job failed!'));
+
+        Log::shouldReceive('error')->once();
+
+        $url = '/api/v1/send-ptp-job/'.$this->volume()->id;
+
+        $this->postJson($url)->assertStatus(500)->assertJson(
+            fn (AssertableJson $json) =>
+                $json->where('message', 'Mocked job failed!')
+                    ->etc()
+        );
+
+        //$this->volume does not update with attrs
+        $volume = Volume::where('id', $this->volume()->id)->first();
+
+        $this->assertFalse(isset($volume->attrs['ptp_job_id']));
+    }
+}

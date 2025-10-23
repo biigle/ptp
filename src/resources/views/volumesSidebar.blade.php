@@ -1,3 +1,9 @@
-@if (($user->can('edit-in', $volume) || $user->can('sudo')) && $volume->isImageVolume() && !$volume->hasTiledImages())
-    <sidebar-tab name="maia" icon="robot" title="Perform Machine Learning Assisted Image Annotation (MAIA)" href="{{route('volumes-maia', $volume->id)}}"></sidebar-tab>
+@if ($user->can('edit-in', $volume) && $volume->isImageVolume())
+    @if($volume->hasTiledImages())
+        <sidebar-tab name="ptp" icon="hat-wizard" title="Magic SAM point conversion is not available for volumes with very large images" :disabled="true"></sidebar-tab>
+    @else
+        <sidebar-tab name="ptp" icon="hat-wizard" title="Convert Points to Polygons">
+            <component :is="plugins.ptpForm"></component>
+        </sidebar-tab>
+    @endif
 @endif

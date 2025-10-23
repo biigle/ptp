@@ -7,7 +7,7 @@ use Biigle\Services\Modules;
 use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
 
-class ModuleServiceProvider extends ServiceProvider
+class PtpServiceProvider extends ServiceProvider
 {
     /**
      * Bootstrap the application events.
@@ -20,10 +20,13 @@ class ModuleServiceProvider extends ServiceProvider
     public function boot(Modules $modules, Router $router)
     {
         $this->loadViewsFrom(__DIR__.'/resources/views', 'ptp');
-        // $this->loadMigrationsFrom(__DIR__.'/Database/migrations');
 
         $this->publishes([
-            __DIR__.'/public/assets' => public_path('vendor/ptp'),
+            __DIR__.'/public' => public_path('vendor/ptp'),
+        ], 'public');
+
+        $this->publishes([
+            __DIR__.'/resources/assets/images' => public_path('vendor/ptp/images'),
         ], 'public');
 
         $router->group([
@@ -36,6 +39,8 @@ class ModuleServiceProvider extends ServiceProvider
         $modules->register('ptp', [
             'viewMixins' => [
                 'volumesSidebar',
+                'volumesScripts',
+                'manualTutorial',
             ],
             'apidoc' => [__DIR__.'/Http/Controllers/Ptp/'],
         ]);

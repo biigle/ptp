@@ -1,5 +1,6 @@
-// import Form from './form';
-// import Show from './show';
+import PtpForm from './ptpForm.vue';
+import {VolumeShowPlugins} from './import.js';
 
-// biigle.$mount('maia-job-form', Form);
-// biigle.$mount('maia-show-container', Show);
+if (VolumeShowPlugins) {
+    VolumeShowPlugins.ptpForm = PtpForm;
+}
