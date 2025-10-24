@@ -20,6 +20,14 @@ class PtpController extends Controller
     /**
      * Generate Point to Polygon Job for the specified volume
      *
+     * @api {post} send-ptp-job/:id Submit point conversion job
+     * @apiGroup Volumes
+     * @apiName StorePtpJob
+     * @apiPermission projectEditor
+     * @apiDescription This will start a Magic SAM point conversion job for all point annotations in the volume. This is not available for volumes with very large images and video volumes. Only one job can be submitted at a time for each volume.
+     *
+     * @apiParam {Number} id The volume ID.
+     *
      * @param  $request
      * @param $volumeId
      * @return void
@@ -68,7 +76,7 @@ class PtpController extends Controller
     * @param Volume $volume Volume where the PTP job is executed
     *
     **/
-    public function setUniquePtpJob(Volume $volume): string
+    protected function setUniquePtpJob(Volume $volume): string
     {
         $attrs = $volume->attrs;
         $uuid = Uuid::uuid4();

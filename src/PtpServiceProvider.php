@@ -42,7 +42,7 @@ class PtpServiceProvider extends ServiceProvider
                 'volumesScripts',
                 'manualTutorial',
             ],
-            'apidoc' => [__DIR__.'/Http/Controllers/Ptp/'],
+            'apidoc' => [__DIR__.'/Http/Controllers/'],
         ]);
 
         if (config('ptp.notifications.allow_user_settings')) {
