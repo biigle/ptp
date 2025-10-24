@@ -3,3 +3,4 @@ torchvision==0.21.*
 git+https://github.com/facebookresearch/segment-anything.git
 numpy==2.1.*
 Pillow==10.3.0
+pandas
