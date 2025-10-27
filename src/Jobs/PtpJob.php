@@ -257,6 +257,8 @@ class PtpJob extends BaseJob implements ShouldQueue
             $insertAnnotationLabels[] = [
                 'label_id' => intval($annotation['label_id']),
                 'user_id' => $this->user->id,
+                'created_at' => $now,
+                'updated_at' => $now,
             ];
 
             if ($idx > 0 && ($idx % static::$insertChunkSize) === 0) {

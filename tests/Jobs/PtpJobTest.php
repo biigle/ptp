@@ -316,9 +316,30 @@ class PtpJobTest extends TestCase
                 ->get()
                 ->toArray();
 
-            $expectedLabelValue = [['label_id' => $this->label->id, 'user_id' => $this->user2->id], ['label_id' => $this->label2->id, 'user_id' => $this->user2->id]];
+            $expectedLabelValue = [
+                [
+                    'label_id' => $this->label->id,
+                    'user_id' => $this->user2->id
+                ],
+                [
+                    'label_id' => $this->label2->id,
+                    'user_id' => $this->user2->id
+                ]
+            ];
             $this->assertEquals($imageAnnotationLabelValues, $expectedLabelValue);
 
+            // Check if timestamps are populated.
+            $count = ImageAnnotation::whereIn('id', $ids)
+                ->whereNotNull('created_at')
+                ->whereNotNull('updated_at')
+                ->count();
+            $this->assertEquals(2, $count);
+
+            $count = ImageAnnotationLabel::whereIn('annotation_id', $ids)
+                ->whereNotNull('created_at')
+                ->whereNotNull('updated_at')
+                ->count();
+            $this->assertEquals(2, $count);
 
             // Here there are 5 jobs because 3 are generated when the setting up annotations
             Queue::assertPushed(ProcessAnnotatedImage::class, 5);
