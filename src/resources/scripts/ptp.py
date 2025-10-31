@@ -746,7 +746,7 @@ if __name__ == "__main__":
     # create the sam predictor
     sam = SamPredictor(sam_model)
 
-    # Compute expected areasa
+    # Compute expected areas
     resulting_annotations = []
     for image_id, annotations in input_values.items():
         if len(annotations) == 0:
