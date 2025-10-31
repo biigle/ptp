@@ -43,6 +43,13 @@ class PtpJobTest extends TestCase
             'uuid' => Uuid::uuid4(),
         ]);
 
+        //Since we mock the PtpJob to have a batch size of 2, this image should NEVER be processed.
+        $this->image3 = Image::create([
+            'volume_id' => $this->volume->id,
+            'filename' => "./mock-image.png",
+            'uuid' => Uuid::uuid4(),
+        ]);
+
         $this->inputFile = config('ptp.temp_dir').'/ptp/input-files/'.$this->volume->id;
         $this->outputFile = config('ptp.temp_dir').'/'.'ptp/'.$this->volume->id.'_converted_annotations.csv';
 
@@ -137,7 +144,7 @@ class PtpJobTest extends TestCase
         try {
             $this->setUpAnnotations();
             $job->handle();
-            $this->assertTrue($job->pythonCalled);
+            $this->assertEquals($job->pythonCalled, 1);
             $volume = Volume::where('id', $this->volume->id)->first();
             $this->assertFalse(isset($volume->attrs['ptp_job_id']));
 
@@ -167,7 +174,7 @@ class PtpJobTest extends TestCase
         try {
             $this->setUpAnnotations();
             $job->handle();
-            $this->assertTrue($job->pythonCalled);
+            $this->assertEquals($job->pythonCalled, 1);
             $volume = Volume::where('id', $this->volume->id)->first();
             $this->assertFalse(isset($volume->attrs['ptp_job_id']));
 
@@ -200,6 +207,10 @@ class PtpJobTest extends TestCase
 
             $json = json_decode(File::get($this->inputFile.'.json'), true);
             $this->assertEquals($this->inputFileContents, $json);
+
+            //Case with empty image
+            $imageData = $job->generateInputFile(collect([$this->image3]));
+            $this->assertTrue(empty($imageData));
         } finally {
             File::delete($this->inputFile.'.json');
         }
@@ -216,6 +227,7 @@ class PtpJobTest extends TestCase
                 $this->image2->id => 'testPath2',
             ];
             $this->assertEquals($json, $expectedImageInput);
+
         } finally {
             File::delete($this->inputFile.'_images.json');
         }
@@ -369,6 +381,7 @@ class PtpJobTest extends TestCase
         //Test that the PTP job handle is executed correctly from start to finish.
         $this->setUpAnnotations();
 
+
         $job = new MockPtpJob(
             $this->volume,
             $this->user,
@@ -378,7 +391,7 @@ class PtpJobTest extends TestCase
 
         try {
             $job->handle();
-            $this->assertTrue($job->pythonCalled);
+            $this->assertEquals($job->pythonCalled, 1);
             $volume = Volume::where('id', $this->volume->id)->first();
             $this->assertFalse(isset($volume->attrs['ptp_job_id']));
 
@@ -454,7 +467,12 @@ class PtpJobTest extends TestCase
 
 class MockPtpJob extends PtpJob
 {
-    public bool $pythonCalled = false;
+    //If > 1, it means that the function has been called more than once.
+    //That should not happen, because it means that it was called for image3
+    public int $pythonCalled = 0;
+
+    //useful to test that empty images are not processed in a chunk
+    public static int $imageChunkSize = 2;
 
     public function __construct(
         public Volume $volume,
@@ -470,7 +488,7 @@ class MockPtpJob extends PtpJob
 
     protected function python(): void
     {
-        $this->pythonCalled = true;
+        $this->pythonCalled += 1;
 
         if ($this->generateOutput) {
             $csv = '';
