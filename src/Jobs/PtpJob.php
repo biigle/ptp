@@ -116,8 +116,12 @@ class PtpJob extends BaseJob implements ShouldQueue
             };
             $this->volume->images()->chunkById(static::$imageChunkSize, function ($chunk) use ($callback) {
                 $imageData = $this->generateInputFile($chunk);
-                FileCache::batch($imageData, $callback);
-                $this->uploadConvertedAnnotations();
+
+                //$imageData can be empty if we have a chunk of images without an annotation
+                if (!empty($imageData)) {
+                    FileCache::batch($imageData, $callback);
+                    $this->uploadConvertedAnnotations();
+                }
             });
         });
         $this->user->notify(new PtpJobConcluded($this->volume));
