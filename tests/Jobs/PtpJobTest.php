@@ -131,7 +131,7 @@ class PtpJobTest extends TestCase
 
     public function testPtpHandleWithoutConvertedFiles(): void
     {
-        //Test that the PTP job correctly calls the handle, fails without converted files and cleans up the volume
+        //Test that the PTP job correctly calls the handle, does not break without converted files and cleans up the volume
         $job = new MockPtpJob(
             $this->volume,
             $this->user,
@@ -139,8 +139,6 @@ class PtpJobTest extends TestCase
             false,
         );
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionMessage("Unable to find output file $this->outputFile");
         try {
             $this->setUpAnnotations();
             $job->handle();

@@ -79,6 +79,11 @@ class PtpJob extends BaseJob implements ShouldQueue
     ];
 
     /**
+     * If set to true, the Job could not convert point annotations in some of the images
+     */
+    protected $convertedAnnotations = false;
+
+    /**
      * Job used for converting Point annotations to Polygons
      *
      * @param Volume $volume Volume for the PTP Job
@@ -124,7 +129,7 @@ class PtpJob extends BaseJob implements ShouldQueue
                 }
             });
         });
-        $this->user->notify(new PtpJobConcluded($this->volume));
+        $this->user->notify(new PtpJobConcluded($this->volume, $this->convertedAnnotations));
         $this->cleanupJob();
         $this->cleanupFiles();
     }
@@ -236,6 +241,12 @@ class PtpJob extends BaseJob implements ShouldQueue
      */
     public function uploadConvertedAnnotations(): void
     {
+        if (File::missing($this->outputFile)) {
+            return;
+        } else if (!$this->convertedAnnotations) {
+            $this->convertedAnnotations = true;
+        }
+
         $insertAnnotations = [];
         $insertAnnotationLabels = [];
         foreach ($this->iterateOverCsvFile($this->outputFile) as $idx => $annotation) {
@@ -386,9 +397,6 @@ class PtpJob extends BaseJob implements ShouldQueue
     protected function iterateOverCsvFile(
         string $file,
     ): Generator {
-        if (File::missing($file)) {
-            throw new Exception("Unable to find output file $file");
-        }
 
         if (File::size($file) == 0) {
             throw new Exception('No annotations were converted!');

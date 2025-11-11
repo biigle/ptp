@@ -21,10 +21,14 @@ class PtpJobConcluded extends Notification
     /**
      * Create a new notification instance.
      *
+     * @param $volume In which volume PTP was run
+     * @param $convertedAnnotations If false, it signifies that no annotations were converted
+     *
      * @return void
      */
-    public function __construct(Volume $volume)
+    public function __construct(Volume $volume, public bool $convertedAnnotations)
     {
+        echo($convertedAnnotations);
         $this->volumeName = $volume->name;
         $this->volumeId = $volume->id;
     }
@@ -58,9 +62,16 @@ class PtpJobConcluded extends Notification
      */
     public function toMail($notifiable)
     {
+        $line = "The Magic SAM point conversion for volume $this->volumeName has concluded successfully.";
+
+        if (!$this->convertedAnnotations) {
+            $line = $line." However, no annotations were converted.";
+        }
+
         $message = (new MailMessage)
             ->subject('Magic SAM point conversion finished')
-            ->line("The Magic SAM point conversion for volume $this->volumeName has concluded successfully.");
+            ->line($line);
+
 
         if (config('app.url')) {
             $message = $message->action('Show volume', route('volume', $this->volumeId));
@@ -77,12 +88,19 @@ class PtpJobConcluded extends Notification
      */
     public function toArray($notifiable)
     {
+        $message = "The Magic SAM point conversion for volume $this->volumeName has concluded successfully.";
+
+        if (!$this->convertedAnnotations) {
+            $message = $message." However, no annotations were converted.";
+        }
+
         $array = [
             'title' => 'Magic SAM point conversion finished',
-            'message' => "The Magic SAM point conversion for volume $this->volumeName has concluded successfully.",
+            'message' => $message,
             'action' => 'Show volume',
             'actionLink' => route('volume', $this->volumeId),
         ];
+
 
         return $array;
     }
