@@ -243,7 +243,7 @@ class PtpJob extends BaseJob implements ShouldQueue
     {
         if (File::missing($this->outputFile)) {
             return;
-        } else if (!$this->convertedAnnotations) {
+        } elseif (!$this->convertedAnnotations) {
             $this->convertedAnnotations = true;
         }
 
