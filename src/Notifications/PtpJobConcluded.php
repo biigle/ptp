@@ -28,7 +28,6 @@ class PtpJobConcluded extends Notification
      */
     public function __construct(Volume $volume, public bool $convertedAnnotations)
     {
-        echo($convertedAnnotations);
         $this->volumeName = $volume->name;
         $this->volumeId = $volume->id;
     }
