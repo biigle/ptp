@@ -79,11 +79,6 @@ class PtpJob extends BaseJob implements ShouldQueue
     ];
 
     /**
-     * If set to true, the Job could not convert point annotations in some of the images
-     */
-    protected $convertedAnnotations = false;
-
-    /**
      * Job used for converting Point annotations to Polygons
      *
      * @param Volume $volume Volume for the PTP Job
@@ -129,7 +124,7 @@ class PtpJob extends BaseJob implements ShouldQueue
                 }
             });
         });
-        $this->user->notify(new PtpJobConcluded($this->volume, $this->convertedAnnotations));
+        $this->user->notify(new PtpJobConcluded($this->volume));
         $this->cleanupJob();
         $this->cleanupFiles();
     }
@@ -243,8 +238,6 @@ class PtpJob extends BaseJob implements ShouldQueue
     {
         if (File::missing($this->outputFile)) {
             return;
-        } elseif (!$this->convertedAnnotations) {
-            $this->convertedAnnotations = true;
         }
 
         $insertAnnotations = [];

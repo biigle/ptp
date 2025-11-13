@@ -26,9 +26,8 @@ class PtpJobConcluded extends Notification
      *
      * @return void
      */
-    public function __construct(Volume $volume, public bool $convertedAnnotations)
+    public function __construct(Volume $volume)
     {
-        echo($convertedAnnotations);
         $this->volumeName = $volume->name;
         $this->volumeId = $volume->id;
     }
@@ -88,15 +87,9 @@ class PtpJobConcluded extends Notification
      */
     public function toArray($notifiable)
     {
-        $message = "The Magic SAM point conversion for volume $this->volumeName has concluded successfully.";
-
-        if (!$this->convertedAnnotations) {
-            $message = $message." However, no annotations were converted.";
-        }
-
         $array = [
             'title' => 'Magic SAM point conversion finished',
-            'message' => $message,
+            'message' => "The Magic SAM point conversion for volume $this->volumeName has concluded successfully.",
             'action' => 'Show volume',
             'actionLink' => route('volume', $this->volumeId),
         ];
