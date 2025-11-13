@@ -22,7 +22,6 @@ class PtpJobConcluded extends Notification
      * Create a new notification instance.
      *
      * @param $volume In which volume PTP was run
-     * @param $convertedAnnotations If false, it signifies that no annotations were converted
      *
      * @return void
      */
@@ -61,15 +60,9 @@ class PtpJobConcluded extends Notification
      */
     public function toMail($notifiable)
     {
-        $line = "The Magic SAM point conversion for volume $this->volumeName has concluded successfully.";
-
-        if (!$this->convertedAnnotations) {
-            $line = $line." However, no annotations were converted.";
-        }
-
         $message = (new MailMessage)
             ->subject('Magic SAM point conversion finished')
-            ->line($line);
+            ->line("The Magic SAM point conversion for volume $this->volumeName has concluded successfully.");
 
 
         if (config('app.url')) {
