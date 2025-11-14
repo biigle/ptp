@@ -236,6 +236,10 @@ class PtpJob extends BaseJob implements ShouldQueue
      */
     public function uploadConvertedAnnotations(): void
     {
+        if (File::missing($this->outputFile)) {
+            return;
+        }
+
         $insertAnnotations = [];
         $insertAnnotationLabels = [];
         foreach ($this->iterateOverCsvFile($this->outputFile) as $idx => $annotation) {
@@ -386,9 +390,6 @@ class PtpJob extends BaseJob implements ShouldQueue
     protected function iterateOverCsvFile(
         string $file,
     ): Generator {
-        if (File::missing($file)) {
-            throw new Exception("Unable to find output file $file");
-        }
 
         if (File::size($file) == 0) {
             throw new Exception('No annotations were converted!');

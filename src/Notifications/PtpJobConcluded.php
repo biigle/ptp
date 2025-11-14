@@ -21,6 +21,8 @@ class PtpJobConcluded extends Notification
     /**
      * Create a new notification instance.
      *
+     * @param $volume In which volume PTP was run
+     *
      * @return void
      */
     public function __construct(Volume $volume)
@@ -62,6 +64,7 @@ class PtpJobConcluded extends Notification
             ->subject('Magic SAM point conversion finished')
             ->line("The Magic SAM point conversion for volume $this->volumeName has concluded successfully.");
 
+
         if (config('app.url')) {
             $message = $message->action('Show volume', route('volume', $this->volumeId));
         }
@@ -83,6 +86,7 @@ class PtpJobConcluded extends Notification
             'action' => 'Show volume',
             'actionLink' => route('volume', $this->volumeId),
         ];
+
 
         return $array;
     }
