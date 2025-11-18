@@ -44,9 +44,6 @@ jobs:
         fetch-depth: 1
         path: core
 
-    - name: Update variables stylesheet link
-      run: ln -sf ../../../../../core/resources/assets/sass/bootstrap/_variables.scss src/resources/assets/sass/_variables.scss
-
     # Don't use "npm run build" because it also runs the artisan command
     - name: Run Vite
       run: npx vite build
