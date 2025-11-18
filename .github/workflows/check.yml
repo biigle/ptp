@@ -1,23 +1,25 @@
-name: Lint
+name: Check
 
 on:
   push:
     branches:
       - main
     paths:
-      - '.github/workflows/lint.yml'
+      - '.github/workflows/check.yml'
       - 'src/resources/assets/**'
+      - 'src/public/**'
       - 'package.json'
       - 'package-lock.json'
   pull_request:
     paths:
-      - '.github/workflows/lint.yml'
+      - '.github/workflows/check.yml'
       - 'src/resources/assets/**'
+      - 'src/public/**'
       - 'package.json'
       - 'package-lock.json'
 
 jobs:
-  lint:
+  check-js:
 
     runs-on: ubuntu-latest
 
@@ -34,5 +36,17 @@ jobs:
     - name: Install dependencies
       run: npm install
 
-    - name: Run ESLint
-      run: npm run lint
+    # Clone core to get access to the variabley stylesheet
+    - uses: actions/checkout@v1
+      with:
+        repository: biigle/core
+        ref: master
+        fetch-depth: 1
+        path: core
+
+    # Don't use "npm run build" because it also runs the artisan command
+    - name: Run Vite
+      run: npx vite build
+
+    - name: Check for uncommitted changes
+      run: '[ -z "$(git status -s --porcelain | grep public)" ]'
