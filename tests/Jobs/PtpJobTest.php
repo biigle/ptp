@@ -234,7 +234,7 @@ class PtpJobTest extends TestCase
         //Here we test that the real python script is called, fails and the PTP job is cleared
         $this->expectException(PythonException::class);
         $this->setUpAnnotations();
-        $job = new PtpJob($this->volume, $this->user, $this->uuid);
+        $job = new Mock2PtpJob($this->volume, $this->user, $this->uuid);
         config(['ptp.python' => 'fake']);
         try {
             $job->handle();
@@ -499,5 +499,13 @@ class MockPtpJob extends PtpJob
             }
             File::put($this->outputFile, $csv);
         }
+    }
+}
+
+class Mock2PtpJob extends PtpJob
+{
+    protected function maybeDownloadCheckpoint($from, $to): void
+    {
+        // No download during tests.
     }
 }
