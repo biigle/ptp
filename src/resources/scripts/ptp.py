@@ -21,7 +21,7 @@ PointAnnotation = namedtuple(
 
 
 def super_zoom_sam(
-    ann_point: np.ndarray, image: np.ndarray, sam: SamPredictor, expected_area: float, x_off:float, y_off:float
+    ann_point: np.ndarray, sam: SamPredictor, expected_area: float, x_off:float, y_off:float
 
 ) -> tuple:
     """
@@ -308,16 +308,14 @@ def annotation_is_out_of_bounds(
         img_height: Image height
 
     Returns:
-       True if the annotation is out of bounds, False if it is
+       True if the annotation is out of bounds, False if it is not
     """
-    # if annotation is out of bounds
     if (
         ann_point[0] < 0
         or ann_point[1] < 0
         or ann_point[0] > img_width
         or ann_point[1] > img_height
     ):
-        # return True -> invalid annotation
         return True
     return False
 
@@ -415,11 +413,10 @@ def mask_to_contour(
         img_width: Image width
         point: The input point annotation
         scores: Prediction scores from SAM prediction
-        multimask: Whether the prediction is multimask
         expected_area: Expected prediction area
 
     Returns:
-        List of coordinates of predictions if valid. List of None otherwise
+        tuple of None if the masks are invalid, the contour and its area otherwise
     """
     valid_contours = []
     indices = np.argsort(scores)[::-1]
@@ -438,13 +435,14 @@ def mask_to_contour(
     return valid_contours[0][0], valid_contours[0][1]
 
 
-def transform_mask(mask: np.ndarray) -> list:
+def transform_mask(mask: np.ndarray) -> list | None:
     """Transform a mask into a contour
 
     Args:
-        mask:
+        mask: an input mask
 
     Returns:
+        if found, the contours found in the mask, else None
 
     """
     if mask.any():
@@ -460,6 +458,17 @@ def process_expected_area(
     image: np.ndarray,
     sam: SamPredictor,
 ) -> dict:
+    """Process an annotation with the objective to gather its expected area.
+
+    Args:
+        annotation: starting PointAnnotation
+        image: Image array
+        sam: SAM object
+
+    Returns:
+        dict containing the converted annotation and the expected area
+
+    """
     img_height, img_width, _ = image.shape
     img_area = img_height * img_width
     label_id = annotation.label
@@ -566,7 +575,7 @@ def process_annotation(
     sam.set_image(annotation_crop)
 
     contour, contour_area = super_zoom_sam(
-        crop_ann_point, image, sam, expected_area, x_off, y_off
+        crop_ann_point, sam, expected_area, x_off, y_off
     )
     if annotation_is_compatible(
         contour, contour_area, 512 * 512, 0.2, expected_area
@@ -646,7 +655,6 @@ def image_unsharp(image: np.array) -> np.array:
     return unsharp_image
 
 
-# returns the beginning of the slice indices as a list of x and y values and the image itself
 def crop_annotation(
     image: np.ndarray, annotation_point: np.ndarray, cropsize: int = 1024
 ) -> list:
@@ -809,14 +817,8 @@ if __name__ == "__main__":
                 row.point_annotation, row.image_id, image, sam, expected_area
             ))
 
-    os.makedirs(os.path.dirname(args.output_file), exist_ok=True)
-    vals = (
-        pd.DataFrame(resulting_annotations)
-        .loc[:, ["annotation_id", "method"]]
-        .groupby("method")
-        .count()
-    )
-    logging.warning(vals)
-    pd.DataFrame(resulting_annotations).loc[
-        :, ["annotation_id", "points", "image_id", "label_id"]
-    ].to_csv(args.output_file, index=False)
+    if len(resulting_annotations) > 0:
+        os.makedirs(os.path.dirname(args.output_file), exist_ok=True)
+        pd.DataFrame(resulting_annotations).loc[
+            :, ["annotation_id", "points", "image_id", "label_id"]
+        ].to_csv(args.output_file, index=False)
