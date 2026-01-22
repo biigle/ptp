@@ -811,8 +811,8 @@ if __name__ == "__main__":
                 )
                 > 0
             ):
-                contour, area = get_best_contour(contours, expected_area)
-                if contour is not None:
+                contour, contour_area = get_best_contour(contours, expected_area)
+                if contour is not None and contour_area is not None:
                     resulting_annotations.append(
                         {
                             "image_id": image_id,
@@ -820,6 +820,7 @@ if __name__ == "__main__":
                             "annotation_id": row.annotation_id,
                             "points": contour,
                             "method": "base",
+                            "contour_area": contour_area,
                         }
                     )
                     continue
@@ -829,7 +830,8 @@ if __name__ == "__main__":
                     row.point_annotation, row.image_id, image, sam, expected_area
                 )
             )
-    resulting_annotations = pd.DataFrame(resulting_annotations).dropna()
+
+    resulting_annotations = pd.DataFrame(resulting_annotations).dropna(how="all")
 
     if not resulting_annotations.empty:
         os.makedirs(os.path.dirname(args.output_file), exist_ok=True)
