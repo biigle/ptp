@@ -114,7 +114,7 @@ def inaccurate_annotation_sam(
         if (
             contour is not None
             and contour_area is not None
-            and contour_area / image_area <= 0.4
+            and contour_area / image_area <= 0.05
         ):
             allcontours.append(contour)
             allareas.append(contour_area)
@@ -234,11 +234,11 @@ def negative_point_sam(
     radius = min(dist + random.randint(5, 10), crop_size // 2)
 
     # generate 2 random points on the circle around the annotation
-    exclude_point1 = generate_random_circle_point(crop_ann_point, 512, radius)
-    exclude_point2 = generate_random_circle_point(crop_ann_point, 512, radius)
-    exclude_point3 = generate_random_circle_point(crop_ann_point, 512, radius)
-    exclude_point4 = generate_random_circle_point(crop_ann_point, 512, radius)
-    exclude_point5 = generate_random_circle_point(crop_ann_point, 512, radius)
+    exclude_point1 = generate_random_circle_point(crop_ann_point, crop_size, radius)
+    exclude_point2 = generate_random_circle_point(crop_ann_point, crop_size, radius)
+    exclude_point3 = generate_random_circle_point(crop_ann_point, crop_size, radius)
+    exclude_point4 = generate_random_circle_point(crop_ann_point, crop_size, radius)
+    exclude_point5 = generate_random_circle_point(crop_ann_point, crop_size, radius)
     # generate the SAM annotation points array with 1 positive and 2 negative points
     pos_neg_points = np.array(
         [
@@ -437,7 +437,7 @@ def mask_to_contour(
 
     for contour, contour_area in sorted_contours:
         if annotation_is_compatible(
-            contour, contour_area, image_area, 0.2, expected_area
+            contour, contour_area, image_area, 0.05, expected_area
         ):
             valid_contours.append((contour, contour_area))
 
@@ -513,7 +513,7 @@ def process_expected_area(
         sorted_contours = [values for values in sorted_contours if values is not None]
 
         for contour, contour_area in sorted_contours:
-            if annotation_is_compatible(contour, contour_area, img_area, 0.2, None):
+            if annotation_is_compatible(contour, contour_area, img_area, 0.05, None):
                 valid_contours.append((contour, contour_area))
 
     except ValueError:
@@ -560,12 +560,12 @@ def process_annotation(
         Converted annotation if successful, None otherwise
     """
     crop_size = 1024
+    image_area = image.shape[0] * image.shape[1]
 
-    if expected_area * 0.25 > crop_size**2:
+    if expected_area * 0.25 > crop_size**2 or crop_size**2 > image_area:
         return {}
 
     label_id = annotation.label
-    image_area = image.shape[0] * image.shape[1]
     ann_point = np.array([[annotation.x, annotation.y]])
 
     x_off, y_off, annotation_crop = crop_annotation(
@@ -573,7 +573,6 @@ def process_annotation(
     )
 
     crop_ann_point = np.array([[ann_point[0][0] - x_off, ann_point[0][1] - y_off]])
-    sam = SamPredictor(sam.model)
 
     sam.set_image(annotation_crop)
 
@@ -592,7 +591,7 @@ def process_annotation(
         }
 
     crop_size = 512
-    if expected_area * 0.25 > crop_size**2:
+    if expected_area * 0.25 > crop_size**2 or crop_size**2 > image_area:
         return {}
 
     x_off, y_off, annotation_crop = crop_annotation(
@@ -600,7 +599,6 @@ def process_annotation(
     )
 
     crop_ann_point = np.array([[ann_point[0][0] - x_off, ann_point[0][1] - y_off]])
-    sam = SamPredictor(sam.model)
     sam.set_image(annotation_crop)
 
     contour, contour_area = super_zoom_sam(
@@ -649,7 +647,7 @@ def process_annotation(
         crop_ann_point[0], x_off, y_off, sam, image_area, expected_area
     )
 
-    if annotation_is_compatible(contour, contour_area, image_area, 0.2, expected_area):
+    if annotation_is_compatible(contour, contour_area, image_area, 0.05, expected_area):
         return {
             "image_id": image_id,
             "label_id": label_id,
