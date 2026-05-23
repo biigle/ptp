@@ -722,7 +722,6 @@ if __name__ == "__main__":
         default=".",
     )
     args = argparser.parse_args()
-    logging.basicConfig(filename="/var/www/pythonLogs.txt", level="WARNING")
     annotations = []
     input_values = {}
     with open(args.input_file, "r") as inp:
@@ -739,11 +738,11 @@ if __name__ == "__main__":
 
     for image_id, annotations in input_values.items():
         if len(annotations) == 0:
-            logging.error(f"No annotations to load for image with id {image_id}!")
+            print(f"No annotations to load for image with id {image_id}!")
             continue
         image_path = image_paths.get(image_id)
         if image_path is None:
-            logging.error(f"Image path for {image_id} not found!")
+            print(f"Image path for {image_id} not found!")
             continue
         image = np.array(Image.open(image_path))
         sam.set_image(image)
@@ -768,7 +767,7 @@ if __name__ == "__main__":
     )
 
     if expected_areas.empty:
-        logging.error("Unable to compute any annotations for expected area!")
+        print("Unable to compute any annotations for expected area!")
         exit(0)
 
     expected_area_values = (
