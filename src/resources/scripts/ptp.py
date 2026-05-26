@@ -784,7 +784,7 @@ if __name__ == "__main__":
         precomputed_annotations = expected_areas.query("image_id == @image_id")
         image_path = image_paths.get(image_id)
         if image_path is None:
-            logging.error(f"Image path for {image_id} not found!")
+            print(f"Image path for {image_id} not found!")
             continue
         image = np.array(Image.open(image_path))
         for _, row in precomputed_annotations.iterrows():
