@@ -1,6 +1,5 @@
 import argparse
 import json
-import logging
 import math
 import os
 import random
@@ -738,11 +737,9 @@ if __name__ == "__main__":
 
     for image_id, annotations in input_values.items():
         if len(annotations) == 0:
-            print(f"No annotations to load for image with id {image_id}!")
             continue
         image_path = image_paths.get(image_id)
         if image_path is None:
-            print(f"Image path for {image_id} not found!")
             continue
         image = np.array(Image.open(image_path))
         sam.set_image(image)
@@ -767,7 +764,6 @@ if __name__ == "__main__":
     )
 
     if expected_areas.empty:
-        print("Unable to compute any annotations for expected area!")
         exit(0)
 
     expected_area_values = (
@@ -784,7 +780,6 @@ if __name__ == "__main__":
         precomputed_annotations = expected_areas.query("image_id == @image_id")
         image_path = image_paths.get(image_id)
         if image_path is None:
-            print(f"Image path for {image_id} not found!")
             continue
         image = np.array(Image.open(image_path))
         for _, row in precomputed_annotations.iterrows():
