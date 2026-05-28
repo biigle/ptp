@@ -765,7 +765,7 @@ if __name__ == "__main__":
 
 
     if expected_areas.empty:
-        raise Exception("No expected area found!")
+        raise Exception("Unable to compute the expected area!")
 
     expected_area_values = (
         expected_areas.dropna()
