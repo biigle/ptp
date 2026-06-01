@@ -1,6 +1,5 @@
 import argparse
 import json
-import logging
 import math
 import os
 import random
@@ -722,7 +721,6 @@ if __name__ == "__main__":
         default=".",
     )
     args = argparser.parse_args()
-    logging.basicConfig(filename="/var/www/pythonLogs.txt", level="WARNING")
     annotations = []
     input_values = {}
     with open(args.input_file, "r") as inp:
@@ -739,12 +737,10 @@ if __name__ == "__main__":
 
     for image_id, annotations in input_values.items():
         if len(annotations) == 0:
-            logging.error(f"No annotations to load for image with id {image_id}!")
             continue
         image_path = image_paths.get(image_id)
         if image_path is None:
-            logging.error(f"Image path for {image_id} not found!")
-            continue
+            raise Exception(f"Missing image path for Image ID {image_id}")
         image = np.array(Image.open(image_path))
         sam.set_image(image)
 
@@ -765,11 +761,11 @@ if __name__ == "__main__":
 
     expected_areas = pd.DataFrame(resulting_annotations).sort_values(
         "contour_area", ascending=False
-    )
+    ).dropna(subset=["contour_area"])
+
 
     if expected_areas.empty:
-        logging.error("Unable to compute any annotations for expected area!")
-        exit(0)
+        raise Exception("Unable to compute the expected area!")
 
     expected_area_values = (
         expected_areas.dropna()
@@ -783,10 +779,8 @@ if __name__ == "__main__":
     for image_id in expected_areas.image_id.unique():
         # here we have already the annotations from base SAM via the expected annotations
         precomputed_annotations = expected_areas.query("image_id == @image_id")
-        image_path = image_paths.get(image_id)
-        if image_path is None:
-            logging.error(f"Image path for {image_id} not found!")
-            continue
+        #we checked above that this exists
+        image_path = image_paths[image_id]
         image = np.array(Image.open(image_path))
         for _, row in precomputed_annotations.iterrows():
             expected_area = expected_area_values.get(row.label_id)
