@@ -779,6 +779,7 @@ if __name__ == "__main__":
 
     expected_area_values = (
         expected_areas
+            .dropna(subset=["contour_area"])
             .sort_values(
                 "contour_area", ascending=False
             )
