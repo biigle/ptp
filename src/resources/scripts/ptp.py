@@ -411,7 +411,7 @@ def get_best_contour(
 def mask_to_contour(
     masks: np.ndarray,
     image_area: float,
-    point: list,
+    point: np.ndarray,
     scores: list,
     expected_area: float,
 ) -> tuple[list, float] | tuple[None, None]:
@@ -493,7 +493,7 @@ def process_expected_area(
     img_height, img_width, _ = image.shape
     img_area = img_height * img_width
     label_id = annotation.label
-    point_annotation = np.array([[annotation.x, annotation.y]])
+    point_annotation = np.array([[annotation.x, annotation.y]], dtype=float)
     if annotation_is_out_of_bounds(point_annotation[0], img_width, img_height):
         return {
             "annotation_id": annotation.annotation_id,
@@ -570,7 +570,7 @@ def process_annotation(
     img_height, img_width, _ = image.shape
     image_area = img_height * img_width
     label_id = annotation.label
-    point_annotation = np.array([[annotation.x, annotation.y]])
+    point_annotation = np.array([[annotation.x, annotation.y]], dtype=float)
     if annotation_is_out_of_bounds(point_annotation[0], img_width, img_height):
         return {}
 
@@ -584,7 +584,7 @@ def process_annotation(
         image, ann_point[0], crop_size=crop_size
     )
 
-    crop_ann_point = np.array([[ann_point[0][0] - x_off, ann_point[0][1] - y_off]])
+    crop_ann_point = np.array([[ann_point[0][0] - x_off, ann_point[0][1] - y_off]], dtype=float)
 
     sam.set_image(annotation_crop)
 
@@ -610,7 +610,7 @@ def process_annotation(
         image, ann_point[0], crop_size=crop_size
     )
 
-    crop_ann_point = np.array([[ann_point[0][0] - x_off, ann_point[0][1] - y_off]])
+    crop_ann_point = np.array([[ann_point[0][0] - x_off, ann_point[0][1] - y_off]], dtype=float)
     sam.set_image(annotation_crop)
 
     contour, contour_area = super_zoom_sam(
