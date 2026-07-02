@@ -363,7 +363,7 @@ def annotation_is_compatible(
 
 
 def get_point_contour(
-    contour: list[float] | None, point: PointAnnotation | tuple[float, float] | np.ndarray[float, float]
+    contour: list[float] | None, point: PointAnnotation | tuple[float, float] | np.ndarray
 ) -> bool:
     """
     Get whether the point is contained in the contour
@@ -577,14 +577,11 @@ def process_annotation(
     if expected_area * 0.25 > crop_size**2 or crop_size**2 > image_area:
         return {}
 
-    label_id = annotation.label
-    ann_point = np.array([[annotation.x, annotation.y]])
-
     x_off, y_off, annotation_crop = crop_annotation(
-        image, ann_point[0], crop_size=crop_size
+        image, point_annotation[0], crop_size=crop_size
     )
 
-    crop_ann_point = np.array([[ann_point[0][0] - x_off, ann_point[0][1] - y_off]], dtype=float)
+    crop_ann_point = np.array([[point_annotation[0][0] - x_off, point_annotation[0][1] - y_off]], dtype=float)
 
     sam.set_image(annotation_crop)
 
@@ -607,10 +604,10 @@ def process_annotation(
         return {}
 
     x_off, y_off, annotation_crop = crop_annotation(
-        image, ann_point[0], crop_size=crop_size
+        image, point_annotation[0], crop_size=crop_size
     )
 
-    crop_ann_point = np.array([[ann_point[0][0] - x_off, ann_point[0][1] - y_off]], dtype=float)
+    crop_ann_point = np.array([[point_annotation[0][0] - x_off, point_annotation[0][1] - y_off]], dtype=float)
     sam.set_image(annotation_crop)
 
     contour, contour_area = super_zoom_sam(
