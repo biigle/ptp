@@ -363,7 +363,7 @@ def annotation_is_compatible(
 
 
 def get_point_contour(
-    contour: list, point: PointAnnotation | tuple | np.ndarray
+    contour: list[float] | None, point: PointAnnotation | tuple[float, float] | np.ndarray
 ) -> bool:
     """
     Get whether the point is contained in the contour
@@ -377,6 +377,7 @@ def get_point_contour(
     """
     if isinstance(point, PointAnnotation):
         point = np.array((point.x, point.y))
+
     if len(point) == 1:
         point = point[0]
 
@@ -410,7 +411,7 @@ def get_best_contour(
 def mask_to_contour(
     masks: np.ndarray,
     image_area: float,
-    point: list,
+    point: np.ndarray,
     scores: list,
     expected_area: float,
 ) -> tuple[list, float] | tuple[None, None]:
@@ -492,9 +493,16 @@ def process_expected_area(
     img_height, img_width, _ = image.shape
     img_area = img_height * img_width
     label_id = annotation.label
-    point_annotation = np.array([[annotation.x, annotation.y]])
+    point_annotation = np.array([[annotation.x, annotation.y]], dtype=float)
     if annotation_is_out_of_bounds(point_annotation[0], img_width, img_height):
-        return {}
+        return {
+            "annotation_id": annotation.annotation_id,
+            "label_id": label_id,
+            "image_id": annotation.image_id,
+            "possible_contours": None,
+            "contour_area": np.nan,
+            "point_annotation": annotation,
+        }
 
     masks, scores, _ = sam.predict(
         point_coords=point_annotation, point_labels=np.array([1]), multimask_output=True
@@ -559,19 +567,21 @@ def process_annotation(
         Converted annotation if successful, None otherwise
     """
     crop_size = 1024
-    image_area = image.shape[0] * image.shape[1]
+    img_height, img_width, _ = image.shape
+    image_area = img_height * img_width
+    label_id = annotation.label
+    point_annotation = np.array([[annotation.x, annotation.y]], dtype=float)
+    if annotation_is_out_of_bounds(point_annotation[0], img_width, img_height):
+        return {}
 
     if expected_area * 0.25 > crop_size**2 or crop_size**2 > image_area:
         return {}
 
-    label_id = annotation.label
-    ann_point = np.array([[annotation.x, annotation.y]])
-
     x_off, y_off, annotation_crop = crop_annotation(
-        image, ann_point[0], crop_size=crop_size
+        image, point_annotation[0], crop_size=crop_size
     )
 
-    crop_ann_point = np.array([[ann_point[0][0] - x_off, ann_point[0][1] - y_off]])
+    crop_ann_point = np.array([[point_annotation[0][0] - x_off, point_annotation[0][1] - y_off]], dtype=float)
 
     sam.set_image(annotation_crop)
 
@@ -594,10 +604,10 @@ def process_annotation(
         return {}
 
     x_off, y_off, annotation_crop = crop_annotation(
-        image, ann_point[0], crop_size=crop_size
+        image, point_annotation[0], crop_size=crop_size
     )
 
-    crop_ann_point = np.array([[ann_point[0][0] - x_off, ann_point[0][1] - y_off]])
+    crop_ann_point = np.array([[point_annotation[0][0] - x_off, point_annotation[0][1] - y_off]], dtype=float)
     sam.set_image(annotation_crop)
 
     contour, contour_area = super_zoom_sam(
@@ -759,19 +769,20 @@ if __name__ == "__main__":
                 )
             )
 
-    expected_areas = pd.DataFrame(resulting_annotations).sort_values(
-        "contour_area", ascending=False
-    ).dropna(subset=["contour_area"])
+    expected_areas = pd.DataFrame(resulting_annotations)
 
-
-    if expected_areas.empty:
+    if expected_areas.empty or expected_areas.dropna(subset=["contour_area"]).empty:
         raise Exception("Unable to compute the expected area!")
 
     expected_area_values = (
-        expected_areas.dropna()
-        .groupby("label_id")
-        .apply(lambda x: x.contour_area.median())
-        .to_dict()
+        expected_areas
+            .dropna(subset=["contour_area"])
+            .sort_values(
+                "contour_area", ascending=False
+            )
+            .groupby("label_id")
+            .apply(lambda x: x.contour_area.median())
+            .to_dict()
     )
 
     resulting_annotations = []
