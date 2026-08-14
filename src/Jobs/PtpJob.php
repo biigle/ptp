@@ -22,11 +22,13 @@ use Generator;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Queue\Attributes\DeleteWhenMissingModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use SplFileObject;
 use Throwable;
 
+#[DeleteWhenMissingModels]
 class PtpJob extends BaseJob implements ShouldQueue
 {
     use Batchable, InteractsWithQueue, Queueable, SerializesModels;
@@ -60,13 +62,6 @@ class PtpJob extends BaseJob implements ShouldQueue
      * @var int
      */
     public static int $insertChunkSize = 5000;
-
-    /**
-     * Ignore this job if the project or volume does not exist any more.
-     *
-     * @var bool
-     */
-    protected $deleteWhenMissingModels = true;
 
     /**
      * List of columns of the CSV file
