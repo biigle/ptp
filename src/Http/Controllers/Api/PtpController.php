@@ -45,10 +45,9 @@ class PtpController extends Controller
             abort(400, 'Another point to polygon conversion job is running in this volume!');
         }
 
-        $pointShapeId = Shape::pointId();
         $annotationsExist = ImageAnnotation::join('images', 'image_annotations.image_id', '=', 'images.id')
             ->where('images.volume_id', $volumeId)
-            ->where('image_annotations.shape_id', $pointShapeId)
+            ->where('image_annotations.shape', Shape::POINT->value)
             ->exists();
 
         if (!$annotationsExist) {

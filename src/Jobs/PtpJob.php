@@ -134,14 +134,12 @@ class PtpJob extends BaseJob implements ShouldQueue
     {
         $imageAnnotationArray = [];
 
-        $pointShapeId = Shape::pointId();
-
         $annotations = ImageAnnotation::join('image_annotation_labels', 'image_annotations.id', '=', 'image_annotation_labels.annotation_id')
             ->join('images', 'image_annotations.image_id', '=', 'images.id')
             ->where('images.volume_id', $this->volume->id)
             ->whereIn('image_annotations.image_id', $chunk->pluck('id'))
-            ->where('image_annotations.shape_id', $pointShapeId)
-            ->select('image_annotations.id as id', 'images.id as image_id', 'image_annotations.points as points', 'image_annotations.shape_id as shape_id', 'image_annotation_labels.label_id as label_id')
+            ->where('image_annotations.shape', Shape::POINT->value)
+            ->select('image_annotations.id as id', 'images.id as image_id', 'image_annotations.points as points', 'image_annotations.shape as shape', 'image_annotation_labels.label_id as label_id')
             ->with('file')
             ->lazy();
 
@@ -154,7 +152,7 @@ class PtpJob extends BaseJob implements ShouldQueue
             $imageAnnotationArray[$annotation->image_id][] = [
                 'annotation_id' => $annotation->id,
                 'points' => $annotation->points,
-                'shape' => $annotation->shape_id,
+                'shape' => $annotation->shape->value,
                 'image' => $annotation->image_id,
                 'label' => $annotation->label_id,
             ];
@@ -238,8 +236,6 @@ class PtpJob extends BaseJob implements ShouldQueue
         $insertAnnotations = [];
         $insertAnnotationLabels = [];
         foreach ($this->iterateOverCsvFile($this->outputFile) as $idx => $annotation) {
-            $polygonShape = Shape::polygonId();
-
             $now = Carbon::now();
 
             //It might happen that we are unable to convert some of the point
@@ -251,7 +247,7 @@ class PtpJob extends BaseJob implements ShouldQueue
             $newAnnotation = [
                 'image_id' => $annotation['image_id'],
                 'points' => json_encode($annotation['points']),
-                'shape_id' => $polygonShape,
+                'shape' => Shape::POLYGON->value,
                 'created_at' => $now,
                 'updated_at' => $now,
             ];
