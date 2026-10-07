@@ -139,7 +139,7 @@ class PtpJob extends BaseJob implements ShouldQueue
             ->where('images.volume_id', $this->volume->id)
             ->whereIn('image_annotations.image_id', $chunk->pluck('id'))
             ->where('image_annotations.shape', Shape::POINT)
-            ->select('image_annotations.id as id', 'images.id as image_id', 'image_annotations.points as points', 'image_annotations.shape as shape', 'image_annotation_labels.label_id as label_id')
+            ->select('image_annotations.id', 'images.id as image_id', 'image_annotations.points', 'image_annotations.shape', 'image_annotation_labels.label_id')
             ->with('file')
             ->lazy();
 
