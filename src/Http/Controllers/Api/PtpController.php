@@ -2,10 +2,10 @@
 
 namespace Biigle\Modules\Ptp\Http\Controllers\Api;
 
+use Biigle\Enums\Shape;
 use Biigle\Http\Controllers\Api\Controller;
 use Biigle\ImageAnnotation;
 use Biigle\Modules\Ptp\Jobs\PtpJob;
-use Biigle\Shape;
 use Biigle\Volume;
 use Exception;
 use Illuminate\Http\Request;
@@ -47,7 +47,7 @@ class PtpController extends Controller
 
         $annotationsExist = ImageAnnotation::join('images', 'image_annotations.image_id', '=', 'images.id')
             ->where('images.volume_id', $volumeId)
-            ->where('image_annotations.shape', Shape::POINT->value)
+            ->where('image_annotations.shape', Shape::POINT)
             ->exists();
 
         if (!$annotationsExist) {

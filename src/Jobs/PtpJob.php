@@ -2,6 +2,7 @@
 
 namespace Biigle\Modules\Ptp\Jobs;
 
+use Biigle\Enums\Shape;
 use Biigle\Image;
 use Biigle\ImageAnnotation;
 use Biigle\ImageAnnotationLabel;
@@ -10,7 +11,6 @@ use Biigle\Jobs\ProcessAnnotatedImage;
 use Biigle\Modules\Ptp\Exceptions\PythonException;
 use Biigle\Modules\Ptp\Notifications\PtpJobConcluded;
 use Biigle\Modules\Ptp\Notifications\PtpJobFailed;
-use Biigle\Shape;
 use Biigle\User;
 use Biigle\Volume;
 use Carbon\Carbon;
@@ -138,7 +138,7 @@ class PtpJob extends BaseJob implements ShouldQueue
             ->join('images', 'image_annotations.image_id', '=', 'images.id')
             ->where('images.volume_id', $this->volume->id)
             ->whereIn('image_annotations.image_id', $chunk->pluck('id'))
-            ->where('image_annotations.shape', Shape::POINT->value)
+            ->where('image_annotations.shape', Shape::POINT)
             ->select('image_annotations.id as id', 'images.id as image_id', 'image_annotations.points as points', 'image_annotations.shape as shape', 'image_annotation_labels.label_id as label_id')
             ->with('file')
             ->lazy();
@@ -247,7 +247,7 @@ class PtpJob extends BaseJob implements ShouldQueue
             $newAnnotation = [
                 'image_id' => $annotation['image_id'],
                 'points' => json_encode($annotation['points']),
-                'shape' => Shape::POLYGON->value,
+                'shape' => Shape::POLYGON,
                 'created_at' => $now,
                 'updated_at' => $now,
             ];

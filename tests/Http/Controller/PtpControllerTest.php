@@ -3,10 +3,10 @@
 namespace Biigle\Tests\Modules\Ptp\Controller;
 
 use ApiTestCase;
+use Biigle\Enums\MediaType;
+use Biigle\Enums\Shape;
 use Biigle\Image;
 use Biigle\ImageAnnotation;
-use Biigle\MediaType;
-use Biigle\Shape;
 use Biigle\Volume;
 use Illuminate\Testing\Fluent\AssertableJson;
 use Log;
