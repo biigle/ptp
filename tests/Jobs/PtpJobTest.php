@@ -2,6 +2,7 @@
 
 namespace Biigle\Tests\Modules\Ptp\Jobs;
 
+use Biigle\Enums\Shape;
 use Biigle\Image;
 use Biigle\ImageAnnotation;
 use Biigle\ImageAnnotationLabel;
@@ -9,7 +10,6 @@ use Biigle\Jobs\ProcessAnnotatedImage;
 use Biigle\Label;
 use Biigle\Modules\Ptp\Exceptions\PythonException;
 use Biigle\Modules\Ptp\Jobs\PtpJob;
-use Biigle\Shape;
 use Biigle\User;
 use Biigle\Volume;
 use Exception;
@@ -70,13 +70,13 @@ class PtpJobTest extends TestCase
         // When generating these annotations, a ProcessAnnotatedImage job is generated.
         $this->imageAnnotation = ImageAnnotation::factory()->create([
             'image_id' => $this->image->id,
-            'shape_id' => Shape::pointId(),
+            'shape' => Shape::POINT,
             'points' => [0, 0],
         ]);
 
         $this->imageAnnotation2 = ImageAnnotation::factory()->create([
             'image_id' => $this->image2->id,
-            'shape_id' => Shape::pointId(),
+            'shape' => Shape::POINT,
             'points' => [0, 0],
         ]);
 
@@ -98,7 +98,7 @@ class PtpJobTest extends TestCase
         //Add an annotation that is not a point annotation to check that it is filtered out
         $this->fakeAnnotation = ImageAnnotation::factory()->create([
             'image_id' => $this->image->id,
-            'shape_id' => Shape::polygonId(),
+            'shape' => Shape::POLYGON,
             'points' => [0, 0, 1, 2, 3, 4, 5],
         ]);
 
@@ -114,14 +114,14 @@ class PtpJobTest extends TestCase
             $this->image->id => [[
                 'annotation_id' => $this->imageAnnotation->id,
                 'points' => $this->imageAnnotation->points,
-                'shape' => Shape::pointId(),
+                'shape' => Shape::POINT->value,
                 'image' => $this->image->id,
                 'label' => $this->label->id,
             ]],
             $this->image2->id =>[[
                 'annotation_id' => $this->imageAnnotation2->id,
                 'points' => $this->imageAnnotation->points,
-                'shape' => Shape::pointId(),
+                'shape' => Shape::POINT->value,
                 'image' => $this->image2->id,
                 'label' => $this->label2->id,
             ]]];
@@ -298,7 +298,7 @@ class PtpJobTest extends TestCase
 
             $imageAnnotationValues = ImageAnnotation::whereIn('image_id', [$this->image->id, $this->image2->id])
                 ->whereNotIn('id', [$this->imageAnnotation->id, $this->imageAnnotation2->id, $this->fakeAnnotation->id])
-                ->select('id', 'points', 'image_id', 'shape_id')
+                ->select('id', 'points', 'image_id', 'shape')
                 ->get();
 
             $ids = $imageAnnotationValues->pluck('id');
@@ -309,12 +309,12 @@ class PtpJobTest extends TestCase
                 'id' => $ids[0],
                 'points' => [1, 2, 3, 4, 5, 6],
                 'image_id' => $this->image->id,
-                'shape_id' => Shape::polygonId(),
+                'shape' => Shape::POLYGON->value,
             ], [
                 'id' => $ids[1],
                 'points' => [1, 2, 3, 4, 5, 6],
                 'image_id' => $this->image2->id,
-                'shape_id' => Shape::polygonId(),
+                'shape' => Shape::POLYGON->value,
             ]];
 
             $this->assertEquals($expectedValue, $imageAnnotationValues->toArray());
@@ -398,7 +398,7 @@ class PtpJobTest extends TestCase
 
             $imageAnnotationValues = ImageAnnotation::whereIn('image_id', [$this->image->id, $this->image2->id])
                 ->whereNotIn('id', [$this->imageAnnotation->id, $this->imageAnnotation2->id, $this->fakeAnnotation->id])
-                ->select('id', 'points', 'image_id', 'shape_id')
+                ->select('id', 'points', 'image_id', 'shape')
                 ->get();
 
             $ids = $imageAnnotationValues->pluck('id');
@@ -409,13 +409,13 @@ class PtpJobTest extends TestCase
                 'id' => $ids[0],
                 'points' => [1, 2, 3, 4],
                 'image_id' => $this->image->id,
-                'shape_id' => Shape::polygonId(),
+                'shape' => Shape::POLYGON->value,
             ],
                 [
                     'id' => $ids[1],
                     'points' => [1, 2, 3, 4],
                     'image_id' => $this->image2->id,
-                    'shape_id' => Shape::polygonId(),
+                    'shape' => Shape::POLYGON->value,
                 ]];
 
             $this->assertEquals($expectedValue, $imageAnnotationValues->toArray());

@@ -3,10 +3,10 @@
 namespace Biigle\Tests\Modules\Ptp\Controller;
 
 use ApiTestCase;
+use Biigle\Enums\MediaType;
+use Biigle\Enums\Shape;
 use Biigle\Image;
 use Biigle\ImageAnnotation;
-use Biigle\MediaType;
-use Biigle\Shape;
 use Biigle\Volume;
 use Illuminate\Testing\Fluent\AssertableJson;
 use Log;
@@ -21,7 +21,7 @@ class PtpControllerTest extends ApiTestCase
         //Test creating a Job with different types of users
         $imageAnnotation = ImageAnnotation::factory()->create([
             'image_id' => $image->id,
-            'shape_id' => Shape::pointId(),
+            'shape' => Shape::POINT,
         ]);
 
         $url = '/api/v1/send-ptp-job/'.$this->volume()->id;
@@ -43,7 +43,7 @@ class PtpControllerTest extends ApiTestCase
 
         $imageAnnotation = ImageAnnotation::factory()->create([
             'image_id' => $image->id,
-            'shape_id' => Shape::pointId(),
+            'shape' => Shape::POINT,
         ]);
 
         $url = '/api/v1/send-ptp-job/'.$this->volume()->id;
@@ -66,7 +66,7 @@ class PtpControllerTest extends ApiTestCase
 
     public function testVideoVolumes()
     {
-        $this->volume(['media_type_id' => MediaType::videoId()]);
+        $this->volume(['media_type' => MediaType::VIDEO]);
 
         $this->beEditor();
 
@@ -88,7 +88,7 @@ class PtpControllerTest extends ApiTestCase
 
         $imageAnnotation = ImageAnnotation::factory()->create([
             'image_id' => $image->id,
-            'shape_id' => Shape::pointId(),
+            'shape' => Shape::POINT,
         ]);
 
         $this->beEditor();
@@ -122,7 +122,7 @@ class PtpControllerTest extends ApiTestCase
 
         $imageAnnotation = ImageAnnotation::factory()->create([
             'image_id' => $image->id,
-            'shape_id' => Shape::pointId(),
+            'shape' => Shape::POINT,
         ]);
 
         $this->beEditor();
